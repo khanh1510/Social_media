@@ -6,8 +6,7 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
-import InventoryOutlinedIcon from "@mui/icons-material/InventoryOutlined";
-import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
+import { Package, Inbox } from "lucide-react";
 
 export default function OrderStatistics() {
   return (
@@ -46,7 +45,7 @@ export default function OrderStatistics() {
             flexShrink: 0,
           }}
         >
-          <InventoryOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />
+          <Package size={18} color="#2563EB" />
         </Box>
         <Box>
           <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}>
@@ -83,7 +82,7 @@ export default function OrderStatistics() {
             mb: 0.5,
           }}
         >
-          <InboxOutlinedIcon sx={{ fontSize: 28, color: "text.disabled" }} />
+          <Inbox size={28} color="#94A3B8" />
         </Box>
         <Typography
           sx={{

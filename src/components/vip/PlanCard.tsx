@@ -1,21 +1,15 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
-import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
-import PlayCircleOutlinedIcon from "@mui/icons-material/PlayCircleOutlined";
-import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
+import { Sparkles, Star, CalendarDays, ThumbsUp, UserPlus, PlayCircle, Share2 } from "lucide-react";
 import type { VipPlan, VipPlanDuration } from "@/types";
 import { platformColors } from "@/data/services";
 
 const serviceTypeIcons: Record<string, React.ReactNode> = {
-  Like: <ThumbUpAltOutlinedIcon sx={{ fontSize: 11 }} />,
-  Follow: <PersonAddAltOutlinedIcon sx={{ fontSize: 11 }} />,
-  View: <PlayCircleOutlinedIcon sx={{ fontSize: 11 }} />,
-  Share: <ShareOutlinedIcon sx={{ fontSize: 11 }} />,
+  Like: <ThumbsUp size={11} />,
+  Follow: <UserPlus size={11} />,
+  View: <PlayCircle size={11} />,
+  Share: <Share2 size={11} />,
 };
 
 const durationOrder: VipPlanDuration[] = ["30d", "3m", "6m", "1y"];
@@ -80,7 +74,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
             whiteSpace: "nowrap",
           }}
         >
-          <AutoAwesomeIcon sx={{ fontSize: 11, color: "white" }} />
+          <Sparkles size={11} color="white" />
           <Typography sx={{ fontSize: "10px", fontWeight: 700, color: "white", letterSpacing: "0.04em" }}>
             Đề xuất
           </Typography>
@@ -102,7 +96,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
             boxShadow: `0 4px 12px ${alpha("#0EA5E9", 0.3)}`,
           }}
         >
-          <WorkspacePremiumIcon sx={{ fontSize: 22, color: "white" }} />
+          <Star size={22} color="white" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
@@ -251,7 +245,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.375, mb: 0.25 }}>
-            <CalendarMonthIcon sx={{ fontSize: 10, color: "text.disabled" }} />
+            <CalendarDays size={10} color="#94A3B8" />
             <Typography sx={{ fontSize: "9px", color: "text.disabled", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
               Bài/ngày
             </Typography>

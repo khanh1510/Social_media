@@ -1,18 +1,26 @@
 "use client";
 
 import { Box, Typography, InputBase, alpha, ToggleButton, ToggleButtonGroup } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
-import { useState, useMemo } from "react";
+import { Search, LayoutGrid } from "lucide-react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import PlatformCategory from "@/components/services/PlatformCategory";
 import { servicesData, platformColors } from "@/data/services";
 import type { PlatformId } from "@/types";
 
 const ALL = "all";
 
-export default function ServicesPage() {
+function ServicesContent() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [activePlatform, setActivePlatform] = useState<PlatformId | "all">(ALL);
+
+  useEffect(() => {
+    const platform = searchParams.get("platform");
+    if (platform && servicesData.some((s) => s.id === platform)) {
+      setActivePlatform(platform as PlatformId);
+    }
+  }, [searchParams]);
 
   const totalServices = servicesData.reduce((sum, p) => sum + p.services.length, 0);
 
@@ -43,7 +51,7 @@ export default function ServicesPage() {
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >
-            <LayersOutlinedIcon sx={{ fontSize: 19, color: "primary.main" }} />
+            <LayoutGrid size={19} color="#2563EB" />
           </Box>
           <Typography sx={{ fontSize: { xs: "20px", sm: "24px" }, fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em" }}>
             Bảng Giá Dịch Vụ
@@ -90,7 +98,7 @@ export default function ServicesPage() {
             },
           }}
         >
-          <SearchIcon sx={{ fontSize: 16, color: "text.disabled", flexShrink: 0 }} />
+          <Search size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
           <InputBase
             placeholder="Tìm kiếm dịch vụ hoặc ID..."
             value={search}
@@ -213,5 +221,13 @@ export default function ServicesPage() {
         </Box>
       )}
     </Box>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <Suspense>
+      <ServicesContent />
+    </Suspense>
   );
 }

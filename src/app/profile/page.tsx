@@ -1,12 +1,8 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import CameraAltOutlinedIcon from "@mui/icons-material/CameraAltOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
-import TelegramIcon from "@mui/icons-material/Telegram";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import { Camera, User, Shield, History, Key } from "lucide-react";
+import { siTelegram } from "simple-icons";
 import { useState } from "react";
 import TabInfo from "@/components/profile/TabInfo";
 import TabSecurity from "@/components/profile/TabSecurity";
@@ -17,11 +13,11 @@ import TabApiKeyHistory from "@/components/profile/TabApiKeyHistory";
 type TabKey = "overview" | "security" | "telegram" | "login-history" | "apikey-history";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "overview", label: "Thông Tin", icon: <PersonOutlineOutlinedIcon sx={{ fontSize: 15 }} /> },
-  { key: "security", label: "Bảo Mật", icon: <ShieldOutlinedIcon sx={{ fontSize: 15 }} /> },
-  { key: "telegram", label: "Telegram", icon: <TelegramIcon sx={{ fontSize: 15 }} /> },
-  { key: "login-history", label: "Lịch Sử Đăng Nhập", icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
-  { key: "apikey-history", label: "Lịch Sử API Key", icon: <KeyOutlinedIcon sx={{ fontSize: 15 }} /> },
+  { key: "overview", label: "Thông Tin", icon: <User size={15} /> },
+  { key: "security", label: "Bảo Mật", icon: <Shield size={15} /> },
+  { key: "telegram", label: "Telegram", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill={`#${siTelegram.hex}`}><path d={siTelegram.path} /></svg> },
+  { key: "login-history", label: "Lịch Sử Đăng Nhập", icon: <History size={15} /> },
+  { key: "apikey-history", label: "Lịch Sử API Key", icon: <Key size={15} /> },
 ];
 
 const BANNER_GRADIENT = "linear-gradient(135deg, #1E3A5F 0%, #0C4A6E 40%, #0369A1 70%, #0284C7 100%)";
@@ -80,7 +76,7 @@ export default function ProfilePage() {
                   background: "linear-gradient(135deg, #DBEAFE, #E0F2FE)",
                 }}
               >
-                <PersonOutlineOutlinedIcon sx={{ fontSize: { xs: 30, sm: 38, md: 46 }, color: "#93C5FD" }} />
+                <User size={46} color="#93C5FD" />
               </Box>
 
               {/* Camera button */}
@@ -106,7 +102,7 @@ export default function ProfilePage() {
                 }}
                 title="Đổi avatar"
               >
-                <CameraAltOutlinedIcon sx={{ fontSize: { xs: 13, sm: 15 }, color: "white" }} />
+                <Camera size={15} color="white" />
               </Box>
             </Box>
           </Box>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Card, Typography, alpha, useTheme } from "@mui/material";
+import { Box, Card, Typography, alpha } from "@mui/material";
 import type { StatCardData } from "@/types";
 
 const colorMap = {
@@ -15,9 +15,7 @@ interface StatCardProps {
 }
 
 export default function StatCard({ data }: StatCardProps) {
-  const theme = useTheme();
   const colors = colorMap[data.color];
-  const Icon = data.icon;
 
   return (
     <Card
@@ -73,7 +71,7 @@ export default function StatCard({ data }: StatCardProps) {
             border: `1px solid ${alpha(colors.main, 0.1)}`,
           }}
         >
-          <Icon sx={{ fontSize: 22, color: colors.main }} />
+          {data.icon}
         </Box>
 
         {/* Content */}

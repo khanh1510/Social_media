@@ -1,17 +1,8 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import WalletOutlinedIcon from "@mui/icons-material/WalletOutlined";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import CircleDollarIcon from "@mui/icons-material/MonetizationOnOutlined";
-import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
-import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
-import CheckIcon from "@mui/icons-material/Check";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import TelegramIcon from "@mui/icons-material/Telegram";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
+import { Wallet, PlusCircle, History, CircleDollarSign, CreditCard, MessageSquare, Check, Mail, Info, Inbox } from "lucide-react";
+import { siTelegram } from "simple-icons";
 import { useState } from "react";
 
 // Payment gateway definitions
@@ -37,7 +28,7 @@ const GATEWAYS: Gateway[] = [
 // Bank abbreviations displayed as text logos
 function BankLogo({ gateway }: { gateway: Gateway }) {
   if (gateway.isAdmin) {
-    return <MessageOutlinedIcon sx={{ fontSize: 20, color: gateway.color }} />;
+    return <MessageSquare size={20} color={gateway.color} />;
   }
   return (
     <Typography
@@ -56,8 +47,8 @@ function BankLogo({ gateway }: { gateway: Gateway }) {
 
 // Contact channels shown when Admin is selected
 const CONTACT_CHANNELS = [
-  { icon: <EmailOutlinedIcon sx={{ fontSize: 18, color: "white" }} />, label: "Email", value: "support@socialmedia.vn", color: "#2563EB" },
-  { icon: <TelegramIcon sx={{ fontSize: 18, color: "white" }} />, label: "Telegram", value: "@SocialMediaVN", color: "#0284C7" },
+  { icon: <Mail size={18} color="white" />, label: "Email", value: "support@socialmedia.vn", color: "#2563EB" },
+  { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d={siTelegram.path} /></svg>, label: "Telegram", value: "@SocialMediaVN", color: "#0284C7" },
 ];
 
 // Mock history
@@ -117,7 +108,7 @@ export default function DepositPage() {
                   boxShadow: "0 4px 14px rgba(14,165,233,0.35)",
                 }}
               >
-                <WalletOutlinedIcon sx={{ fontSize: 24, color: "white" }} />
+                <Wallet size={24} color="white" />
               </Box>
             </Box>
             <Box sx={{ minWidth: 0 }}>
@@ -145,7 +136,7 @@ export default function DepositPage() {
               backdropFilter: "blur(8px)",
             }}
           >
-            <CircleDollarIcon sx={{ fontSize: 20, color: "#0EA5E9", flexShrink: 0 }} />
+            <CircleDollarSign size={20} color="#0EA5E9" style={{ flexShrink: 0 }} />
             <Box>
               <Typography sx={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.disabled" }}>
                 Số dư hiện tại
@@ -173,8 +164,8 @@ export default function DepositPage() {
         }}
       >
         {[
-          { key: "methods", label: "Nạp Tiền", icon: <AddCircleOutlineIcon sx={{ fontSize: 15 }} /> },
-          { key: "history", label: "Lịch Sử", icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
+          { key: "methods", label: "Nạp Tiền", icon: <PlusCircle size={15} /> },
+          { key: "history", label: "Lịch Sử", icon: <History size={15} /> },
         ].map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -238,7 +229,7 @@ export default function DepositPage() {
                   boxShadow: "0 2px 6px rgba(14,165,233,0.3)",
                 }}
               >
-                <CreditCardOutlinedIcon sx={{ fontSize: 15, color: "white" }} />
+                <CreditCard size={15} color="white" />
               </Box>
               <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>
                 Cổng Thanh Toán
@@ -344,7 +335,7 @@ export default function DepositPage() {
                           flexShrink: 0,
                         }}
                       >
-                        <CheckIcon sx={{ fontSize: 11, color: "white" }} />
+                        <Check size={11} color="white" />
                       </Box>
                     )}
                   </Box>
@@ -381,7 +372,7 @@ export default function DepositPage() {
                       boxShadow: `0 4px 12px ${alpha(gateway.color, 0.3)}`,
                     }}
                   >
-                    <MessageOutlinedIcon sx={{ fontSize: 22, color: "white" }} />
+                    <MessageSquare size={22} color="white" />
                   </Box>
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -452,7 +443,7 @@ export default function DepositPage() {
                         borderColor: "divider",
                       }}
                     >
-                      <InfoOutlinedIcon sx={{ fontSize: 14, color: gateway.color, flexShrink: 0, mt: 0.125 }} />
+                      <Info size={14} color={gateway.color} style={{ flexShrink: 0, marginTop: 1 }} />
                       <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.5 }}>
                         Admin sẽ gửi thông tin tài khoản ngân hàng và xác nhận giao dịch sau khi bạn chuyển khoản. Thời gian xử lý: <Box component="strong" sx={{ color: "text.primary" }}>5–15 phút</Box>.
                       </Typography>
@@ -524,7 +515,7 @@ export default function DepositPage() {
                     borderColor: "divider",
                   }}
                 >
-                  <InfoOutlinedIcon sx={{ fontSize: 14, color: gateway.color, flexShrink: 0, mt: 0.125 }} />
+                  <Info size={14} color={gateway.color} style={{ flexShrink: 0, marginTop: 1 }} />
                   <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.5 }}>
                     Nhập đúng nội dung chuyển khoản để hệ thống tự động xác nhận. Thời gian xử lý: <Box component="strong" sx={{ color: "text.primary" }}>5–15 phút</Box>.
                   </Typography>
@@ -590,7 +581,7 @@ export default function DepositPage() {
 
           {HISTORY.length === 0 ? (
             <Box sx={{ py: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-              <InboxOutlinedIcon sx={{ fontSize: 36, color: "text.disabled" }} />
+              <Inbox size={36} color="#94A3B8" />
               <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Chưa có giao dịch nào.</Typography>
             </Box>
           ) : (
@@ -623,7 +614,7 @@ export default function DepositPage() {
                         justifyContent: "center",
                       }}
                     >
-                      <WalletOutlinedIcon sx={{ fontSize: 18, color: "#0284C7" }} />
+                      <Wallet size={18} color="#0284C7" />
                     </Box>
 
                     {/* Info */}

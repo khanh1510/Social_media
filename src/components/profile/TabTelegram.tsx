@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Typography, alpha, InputBase } from "@mui/material";
-import TelegramIcon from "@mui/icons-material/Telegram";
-import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
+import { Link } from "lucide-react";
+import { siTelegram } from "simple-icons";
 
 export default function TabTelegram() {
   return (
@@ -21,7 +21,7 @@ export default function TabTelegram() {
             boxShadow: "0 4px 12px rgba(2,132,199,0.3)",
           }}
         >
-          <TelegramIcon sx={{ fontSize: 24, color: "white" }} />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d={siTelegram.path} /></svg>
         </Box>
         <Box>
           <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>
@@ -122,7 +122,7 @@ export default function TabTelegram() {
             "&:active": { transform: "scale(0.98)" },
           }}
         >
-          <LinkOutlinedIcon sx={{ fontSize: 15 }} />
+          <Link size={15} />
           Liên kết
         </Box>
       </Box>

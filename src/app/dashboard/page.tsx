@@ -1,10 +1,5 @@
 import { Box, Grid, Typography, Button, alpha } from "@mui/material";
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import SavingsOutlinedIcon from "@mui/icons-material/SavingsOutlined";
-import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import TrackChangesOutlinedIcon from "@mui/icons-material/TrackChangesOutlined";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
+import { Wallet, PiggyBank, TrendingUp, Target, ArrowRight, Bell } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import NotificationCard from "@/components/dashboard/NotificationCard";
 import OrderStatistics from "@/components/dashboard/OrderStatistics";
@@ -15,28 +10,28 @@ const statCards: StatCardData[] = [
     id: "balance",
     label: "Số Dư Hiện Tại",
     value: "0 ₫",
-    icon: AccountBalanceWalletOutlinedIcon,
+    icon: <Wallet size={22} color="#2563EB" />,
     color: "primary",
   },
   {
     id: "deposited",
     label: "Tổng Đã Nạp",
     value: "0 ₫",
-    icon: SavingsOutlinedIcon,
+    icon: <PiggyBank size={22} color="#10B981" />,
     color: "success",
   },
   {
     id: "revenue",
     label: "Tổng Thu Nhập",
     value: "0 ₫",
-    icon: TrendingUpOutlinedIcon,
+    icon: <TrendingUp size={22} color="#0EA5E9" />,
     color: "info",
   },
   {
     id: "rank",
     label: "Hạng",
     value: "Đồng",
-    icon: TrackChangesOutlinedIcon,
+    icon: <Target size={22} color="#06B6D4" />,
     color: "warning",
   },
 ];
@@ -135,7 +130,7 @@ export default function DashboardPage() {
                   justifyContent: "center",
                 }}
               >
-                <NotificationsOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+                <Bell size={16} color="#2563EB" />
               </Box>
               <Box>
                 <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}>
@@ -149,7 +144,7 @@ export default function DashboardPage() {
 
             <Button
               size="small"
-              endIcon={<ArrowForwardIcon sx={{ fontSize: "13px !important" }} />}
+              endIcon={<ArrowRight size={13} />}
               sx={{
                 fontSize: "12px",
                 fontWeight: 600,

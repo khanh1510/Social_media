@@ -10,7 +10,7 @@ export interface StatCardData {
   id: string;
   label: string;
   value: string;
-  icon: React.ElementType;
+  icon: React.ReactNode;
   color: "primary" | "success" | "info" | "warning";
 }
 
@@ -56,6 +56,28 @@ export interface VipPlan {
   maxPostsPerDay: number;
   pricing: VipPlanPricing[];
   featured?: boolean;
+}
+
+// ── Seeding Orders ────────────────────────────────────────────────────────────
+
+export type OrderStatus = "pending" | "processing" | "completed" | "failed" | "refunded";
+
+export interface SeedingOrder {
+  id: string;
+  serviceId: number;
+  serviceName: string;
+  platform: PlatformId;
+  serviceType: string;
+  link: string;
+  quantity: number;
+  pricePerUnit: number; // ₫ per 1
+  totalCost: number;    // ₫
+  note?: string;
+  status: OrderStatus;
+  progress: number;     // 0–100
+  createdAt: string;    // ISO date string
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface Notification {

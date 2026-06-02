@@ -1,8 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import BoltIcon from "@mui/icons-material/Bolt";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { Zap, Clock } from "lucide-react";
 import type { Service } from "@/types";
 
 interface ServiceItemProps {
@@ -157,7 +156,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                   fontSize: "10px", fontWeight: 700,
                 }}
               >
-                <BoltIcon sx={{ fontSize: 10 }} />
+                <Zap size={10} />
                 {speed.label}
               </Box>
 
@@ -171,7 +170,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                   color: "#0891B2",
                 }}
               >
-                <AccessTimeIcon sx={{ fontSize: 12 }} />
+                <Clock size={12} />
                 {formatDuration(service.durationMin)}
               </Box>
             </Box>

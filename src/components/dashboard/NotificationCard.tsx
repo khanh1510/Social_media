@@ -8,9 +8,7 @@ import {
   IconButton,
   alpha,
 } from "@mui/material";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
-import VerifiedIcon from "@mui/icons-material/Verified";
+import { MoreHorizontal, Globe, BadgeCheck } from "lucide-react";
 import type { Notification } from "@/types";
 
 const platformColors: Record<Notification["platform"], string> = {
@@ -90,7 +88,7 @@ export default function NotificationCard({ notification }: NotificationCardProps
                 justifyContent: "center",
               }}
             >
-              <VerifiedIcon sx={{ fontSize: 14, color: "#2563EB" }} />
+              <BadgeCheck size={14} color="#2563EB" />
             </Box>
           )}
         </Box>
@@ -114,12 +112,7 @@ export default function NotificationCard({ notification }: NotificationCardProps
               {notification.timeAgo}
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "text.disabled" }}>·</Typography>
-            <LanguageOutlinedIcon
-              sx={{
-                fontSize: 12,
-                color: platformColor,
-              }}
-            />
+            <Globe size={12} color={platformColor} />
             <Typography
               sx={{
                 fontSize: "11px",
@@ -145,7 +138,7 @@ export default function NotificationCard({ notification }: NotificationCardProps
             "&:hover": { bgcolor: alpha("#0F172A", 0.06), color: "text.primary" },
           }}
         >
-          <MoreHorizIcon sx={{ fontSize: 16 }} />
+          <MoreHorizontal size={16} />
         </IconButton>
       </Box>
 

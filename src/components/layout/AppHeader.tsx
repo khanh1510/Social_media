@@ -12,13 +12,7 @@ import {
   Tooltip,
   Chip,
 } from "@mui/material";
-import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import KeyboardCommandKeyIcon from "@mui/icons-material/KeyboardCommandKey";
-import ChevronDownIcon from "@mui/icons-material/ExpandMore";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { PanelLeftClose, PanelLeftOpen, Search, Sun, ChevronDown } from "lucide-react";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "./AppSidebar";
 
 interface AppHeaderProps {
@@ -82,7 +76,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
               transition: "all 150ms ease",
             }}
           >
-            {collapsed ? <MenuIcon sx={{ fontSize: 20 }} /> : <MenuOpenIcon sx={{ fontSize: 20 }} />}
+            {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </IconButton>
         </Tooltip>
 
@@ -102,7 +96,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
               transition: "all 150ms ease",
             }}
           >
-            <MenuIcon sx={{ fontSize: 20 }} />
+            <PanelLeftOpen size={20} />
           </IconButton>
         </Tooltip>
 
@@ -129,7 +123,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
             },
           }}
         >
-          <SearchIcon sx={{ fontSize: 16, color: "info.main", flexShrink: 0 }} />
+          <Search size={16} color="#0EA5E9" style={{ flexShrink: 0 }} />
           <InputBase
             placeholder="Tìm kiếm trang, dịch vụ..."
             sx={{
@@ -155,9 +149,8 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
               flexShrink: 0,
             }}
           >
-            <KeyboardCommandKeyIcon sx={{ fontSize: 10, color: "text.disabled" }} />
             <Typography sx={{ fontSize: "10px", color: "text.disabled", fontWeight: 600, lineHeight: 1 }}>
-              K
+              ⌘K
             </Typography>
           </Box>
         </Box>
@@ -180,7 +173,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 transition: "all 150ms ease",
               }}
             >
-              <LightModeOutlinedIcon sx={{ fontSize: 18 }} />
+              <Sun size={18} />
             </IconButton>
           </Tooltip>
 
@@ -242,14 +235,16 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 </Avatar>
               </Box>
               {/* Online indicator */}
-              <FiberManualRecordIcon
+              <Box
                 sx={{
                   position: "absolute",
                   bottom: 0,
                   right: 0,
-                  fontSize: 11,
-                  color: "#10B981",
-                  filter: "drop-shadow(0 0 0 2px white)",
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  bgcolor: "#10B981",
+                  border: "2px solid white",
                 }}
               />
             </Box>
@@ -284,14 +279,9 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
             </Box>
 
             {/* Chevron */}
-            <ChevronDownIcon
-              sx={{
-                fontSize: 16,
-                color: "text.disabled",
-                display: { xs: "none", lg: "block" },
-                flexShrink: 0,
-              }}
-            />
+            <Box sx={{ display: { xs: "none", lg: "block" }, flexShrink: 0, lineHeight: 0 }}>
+              <ChevronDown size={16} color="#94A3B8" />
+            </Box>
           </Box>
         </Box>
       </Toolbar>

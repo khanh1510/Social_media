@@ -1,14 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha, MenuItem, Select, FormControl } from "@mui/material";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
-import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
-import BoltIcon from "@mui/icons-material/Bolt";
-import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import LoopIcon from "@mui/icons-material/Loop";
-import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
+import { Sparkles, LayoutGrid, Star, Zap, Shield, XCircle, RefreshCw, Inbox } from "lucide-react";
 import { useState, useMemo } from "react";
 import PlanCard from "@/components/vip/PlanCard";
 import { vipPlans } from "@/data/vip";
@@ -17,10 +10,10 @@ import type { PlatformId, VipPlanDuration } from "@/types";
 const ALL = "all";
 
 const featureBadges = [
-  { icon: <BoltIcon sx={{ fontSize: 13, color: "#0EA5E9" }} />, label: "Auto tức thì" },
-  { icon: <ShieldOutlinedIcon sx={{ fontSize: 13, color: "#10B981" }} />, label: "An toàn 100%" },
-  { icon: <CancelOutlinedIcon sx={{ fontSize: 13, color: "#F59E0B" }} />, label: "Huỷ bất kỳ lúc nào" },
-  { icon: <LoopIcon sx={{ fontSize: 13, color: "#8B5CF6" }} />, label: "Bảo hành refill" },
+  { icon: <Zap size={13} color="#0EA5E9" />, label: "Auto tức thì" },
+  { icon: <Shield size={13} color="#10B981" />, label: "An toàn 100%" },
+  { icon: <XCircle size={13} color="#F59E0B" />, label: "Huỷ bất kỳ lúc nào" },
+  { icon: <RefreshCw size={13} color="#8B5CF6" />, label: "Bảo hành refill" },
 ];
 
 const platformOptions: { value: string; label: string }[] = [
@@ -79,7 +72,7 @@ export default function VipPage() {
             boxShadow: `0 4px 16px ${alpha("#0EA5E9", 0.4)}`,
           }}
         >
-          <AutoAwesomeIcon sx={{ fontSize: 24, color: "white" }} />
+          <Sparkles size={24} color="white" />
         </Box>
 
         <Typography
@@ -143,8 +136,8 @@ export default function VipPage() {
         }}
       >
         {[
-          { key: "available", label: "Gói có sẵn", icon: <LayersOutlinedIcon sx={{ fontSize: 15 }} /> },
-          { key: "mine", label: "Của tôi", icon: <WorkspacePremiumIcon sx={{ fontSize: 15 }} /> },
+          { key: "available", label: "Gói có sẵn", icon: <LayoutGrid size={15} /> },
+          { key: "mine", label: "Của tôi", icon: <Star size={15} /> },
         ].map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -284,7 +277,7 @@ export default function VipPage() {
               opacity: 0.4,
             }}
           >
-            <InboxOutlinedIcon sx={{ fontSize: 28, color: "white" }} />
+            <Inbox size={28} color="white" />
           </Box>
           <Typography sx={{ fontSize: "15px", fontWeight: 700, color: "text.secondary" }}>
             Bạn chưa đăng ký gói nào

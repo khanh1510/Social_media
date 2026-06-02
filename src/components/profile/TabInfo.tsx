@@ -1,11 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha, InputBase, Tooltip } from "@mui/material";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
-import CheckIcon from "@mui/icons-material/Check";
+import { Copy, RotateCw, Eye, EyeOff, Check } from "lucide-react";
 import { useState } from "react";
 
 const MOCK_API_KEY = "sk-live-4xKz9mN2pQrT8vWsLbJhYcFdGaEiOuX";
@@ -124,8 +120,8 @@ export default function TabInfo() {
                 }}
               >
                 {showKey
-                  ? <VisibilityOffOutlinedIcon sx={{ fontSize: 16 }} />
-                  : <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />}
+                  ? <EyeOff size={16} />
+                  : <Eye size={16} />}
               </Box>
             </Tooltip>
           </Box>
@@ -156,7 +152,7 @@ export default function TabInfo() {
                 },
               }}
             >
-              {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+              {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? "Đã copy" : "Copy"}
             </Box>
 
@@ -186,7 +182,7 @@ export default function TabInfo() {
                 "&:active": { transform: "scale(0.98)" },
               }}
             >
-              <RefreshIcon sx={{ fontSize: 14 }} />
+              <RotateCw size={14} />
               {regenerated ? "Đã tạo mới" : "Regenerate"}
             </Box>
           </Box>

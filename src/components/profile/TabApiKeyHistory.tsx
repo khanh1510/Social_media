@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import { Key } from "lucide-react";
 
 const mockApiHistory = [
   { id: 1, key: "sk-live-4xKz9mN2pQrT8vW...", action: "Tạo mới", time: "31/05/2026 14:30", ip: "113.161.xx.xx" },
@@ -56,7 +56,7 @@ export default function TabApiKeyHistory() {
                   justifyContent: "center",
                 }}
               >
-                <KeyOutlinedIcon sx={{ fontSize: 17, color: "text.disabled" }} />
+                <Key size={17} color="#94A3B8" />
               </Box>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>

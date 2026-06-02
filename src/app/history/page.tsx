@@ -1,17 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha, InputBase, MenuItem, Select } from "@mui/material";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined";
-import ArrowUpwardOutlinedIcon from "@mui/icons-material/ArrowUpwardOutlined";
-import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
-import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined";
-import SearchIcon from "@mui/icons-material/Search";
-import FilterListOutlinedIcon from "@mui/icons-material/FilterListOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import WalletOutlinedIcon from "@mui/icons-material/WalletOutlined";
+import { History, Download, RefreshCw, ArrowDown, ArrowUp, Star, RotateCcw, Search, SlidersHorizontal, CalendarDays, Wallet } from "lucide-react";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 
@@ -46,10 +36,10 @@ const MOCK: Transaction[] = [
 
 // ── Config maps ──────────────────────────────────────────
 const TYPE_CONFIG: Record<TxType, { label: string; icon: React.ReactNode; color: string; bg: string; isCredit: boolean }> = {
-  deposit: { label: "Nạp tiền",  icon: <ArrowDownwardOutlinedIcon sx={{ fontSize: 16 }} />, color: "#059669", bg: "rgba(16,185,129,0.1)",  isCredit: true },
-  spend:   { label: "Chi tiêu",  icon: <ArrowUpwardOutlinedIcon   sx={{ fontSize: 16 }} />, color: "#DC2626", bg: "rgba(220,38,38,0.08)",   isCredit: false },
-  vip:     { label: "Mua VIP",   icon: <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16 }} />, color: "#0284C7", bg: "rgba(14,165,233,0.08)", isCredit: false },
-  refund:  { label: "Hoàn tiền", icon: <ReplayOutlinedIcon         sx={{ fontSize: 16 }} />, color: "#0891B2", bg: "rgba(6,182,212,0.08)",  isCredit: true },
+  deposit: { label: "Nạp tiền",  icon: <ArrowDown size={16} />, color: "#059669", bg: "rgba(16,185,129,0.1)",  isCredit: true },
+  spend:   { label: "Chi tiêu",  icon: <ArrowUp   size={16} />, color: "#DC2626", bg: "rgba(220,38,38,0.08)",   isCredit: false },
+  vip:     { label: "Mua VIP",   icon: <Star      size={16} />, color: "#0284C7", bg: "rgba(14,165,233,0.08)", isCredit: false },
+  refund:  { label: "Hoàn tiền", icon: <RotateCcw size={16} />, color: "#0891B2", bg: "rgba(6,182,212,0.08)",  isCredit: true },
 };
 
 const STATUS_CONFIG: Record<TxStatus, { label: string; color: string; bg: string }> = {
@@ -174,7 +164,7 @@ export default function HistoryPage() {
             <Box sx={{ position: "relative", flexShrink: 0 }}>
               <Box sx={{ position: "absolute", inset: -4, borderRadius: "14px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4)", filter: "blur(8px)", opacity: 0.35 }} />
               <Box sx={{ position: "relative", width: 48, height: 48, borderRadius: "14px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4, #3B82F6)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(14,165,233,0.35)" }}>
-                <HistoryOutlinedIcon sx={{ fontSize: 24, color: "white" }} />
+                <History size={24} color="white" />
               </Box>
             </Box>
             <Box>
@@ -207,7 +197,7 @@ export default function HistoryPage() {
                 "&:hover": { borderColor: "primary.main", color: "primary.main", transform: "translateY(-1px)", boxShadow: "0 2px 8px rgba(37,99,235,0.1)" },
               }}
             >
-              <DownloadOutlinedIcon sx={{ fontSize: 15 }} />
+              <Download size={15} />
               Xuất CSV
             </Box>
             <Box
@@ -226,7 +216,7 @@ export default function HistoryPage() {
                 "&:hover": { borderColor: "primary.main", color: "primary.main", transform: "translateY(-1px)" },
               }}
             >
-              <RefreshOutlinedIcon sx={{ fontSize: 15 }} />
+              <RefreshCw size={15} />
               Làm mới
             </Box>
           </Box>
@@ -242,10 +232,10 @@ export default function HistoryPage() {
           mb: 3,
         }}
       >
-        <StatCard icon={<ArrowDownwardOutlinedIcon sx={{ fontSize: 15 }} />} label="Tổng nạp + thưởng" value={`${fmt(totalDeposit)} ₫`} color="#059669" />
-        <StatCard icon={<ArrowUpwardOutlinedIcon   sx={{ fontSize: 15 }} />} label="Tổng đã chi"       value={`${fmt(totalSpend)} ₫`}   color="#DC2626" />
-        <StatCard icon={<WorkspacePremiumOutlinedIcon sx={{ fontSize: 15 }} />} label="Mua VIP"         value={`${fmt(totalVip)} ₫`}    color="#0284C7" />
-        <StatCard icon={<ReplayOutlinedIcon         sx={{ fontSize: 15 }} />} label="Hoàn tiền"        value={`${fmt(totalRefund)} ₫`}  color="#0891B2" />
+        <StatCard icon={<ArrowDown size={15} />} label="Tổng nạp + thưởng" value={`${fmt(totalDeposit)} ₫`} color="#059669" />
+        <StatCard icon={<ArrowUp   size={15} />} label="Tổng đã chi"       value={`${fmt(totalSpend)} ₫`}   color="#DC2626" />
+        <StatCard icon={<Star      size={15} />} label="Mua VIP"           value={`${fmt(totalVip)} ₫`}     color="#0284C7" />
+        <StatCard icon={<RotateCcw size={15} />} label="Hoàn tiền"         value={`${fmt(totalRefund)} ₫`}  color="#0891B2" />
       </Box>
 
       {/* ── Filter bar ── */}
@@ -271,7 +261,7 @@ export default function HistoryPage() {
             borderColor: alpha("#0EA5E9", 0.15),
           }}
         >
-          <CalendarMonthOutlinedIcon sx={{ fontSize: 15, color: "#0EA5E9", ml: 0.5, flexShrink: 0 }} />
+          <CalendarDays size={15} color="#0EA5E9" style={{ marginLeft: 4, flexShrink: 0 }} />
           {DATE_PILLS.map((pill) => {
             const active = dateRange === pill.key;
             return (
@@ -355,7 +345,7 @@ export default function HistoryPage() {
             alignItems: "center",
           }}
         >
-          <SearchIcon sx={{ position: "absolute", left: 12, fontSize: 16, color: "text.disabled", flexShrink: 0 }} />
+          <Search size={16} color="#94A3B8" style={{ position: "absolute", left: 12, flexShrink: 0 }} />
           <InputBase
             placeholder="Tìm theo mã giao dịch..."
             value={search}
@@ -424,7 +414,7 @@ export default function HistoryPage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <FilterListOutlinedIcon sx={{ fontSize: 38, color: "#0EA5E9" }} />
+              <SlidersHorizontal size={38} color="#0EA5E9" />
             </Box>
             <Box>
               <Typography sx={{ fontSize: "16px", fontWeight: 700, color: "text.primary", mb: 0.5 }}>
@@ -451,7 +441,7 @@ export default function HistoryPage() {
                 "&:hover": { opacity: 0.9, transform: "translateY(-1px)" },
               }}
             >
-              <WalletOutlinedIcon sx={{ fontSize: 16 }} />
+              <Wallet size={16} />
               Nạp tiền ngay
             </Box>
           </Box>

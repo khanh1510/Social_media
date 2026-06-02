@@ -1,9 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha } from "@mui/material";
-import ComputerOutlinedIcon from "@mui/icons-material/ComputerOutlined";
-import SmartphoneOutlinedIcon from "@mui/icons-material/SmartphoneOutlined";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import { Monitor, Smartphone, CheckCircle } from "lucide-react";
 
 const mockHistory = [
   { id: 1, device: "Chrome / Windows 11", ip: "113.161.xx.xx", location: "Hồ Chí Minh, VN", time: "31/05/2026 14:32", current: true, mobile: false },
@@ -53,8 +51,8 @@ export default function TabLoginHistory() {
               }}
             >
               {h.mobile
-                ? <SmartphoneOutlinedIcon sx={{ fontSize: 18, color: h.current ? "primary.main" : "text.disabled" }} />
-                : <ComputerOutlinedIcon sx={{ fontSize: 18, color: h.current ? "primary.main" : "text.disabled" }} />}
+                ? <Smartphone size={18} color={h.current ? "#2563EB" : "#94A3B8"} />
+                : <Monitor size={18} color={h.current ? "#2563EB" : "#94A3B8"} />}
             </Box>
 
             <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -64,7 +62,7 @@ export default function TabLoginHistory() {
                 </Typography>
                 {h.current && (
                   <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.375, px: 0.75, py: 0.25, borderRadius: "99px", bgcolor: alpha("#10B981", 0.1), color: "#059669", fontSize: "10px", fontWeight: 700 }}>
-                    <CheckCircleOutlinedIcon sx={{ fontSize: 10 }} />
+                    <CheckCircle size={10} />
                     Hiện tại
                   </Box>
                 )}

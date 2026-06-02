@@ -1,9 +1,7 @@
 "use client";
 
 import { Box, Typography, alpha, InputBase } from "@mui/material";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 function PasswordField({ label, placeholder }: { label: string; placeholder: string }) {
@@ -48,7 +46,7 @@ function PasswordField({ label, placeholder }: { label: string; placeholder: str
             "&:hover": { color: "text.secondary" },
           }}
         >
-          {show ? <VisibilityOffOutlinedIcon sx={{ fontSize: 16 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />}
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </Box>
       </Box>
     </Box>
@@ -60,7 +58,7 @@ export default function TabSecurity() {
     <Box sx={{ py: 3, maxWidth: 480 }}>
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-          <LockOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+          <Lock size={16} color="#2563EB" />
           <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>
             Đổi Mật Khẩu
           </Typography>
