@@ -72,7 +72,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
             borderRadius: "12px",
             border: "2px solid",
             borderColor: alpha(accentColor, 0.2),
-            background: `linear-gradient(135deg, ${alpha(accentColor, 0.08)}, ${alpha(accentColor, 0.04)})`,
+            background: alpha(accentColor, 0.08),
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -185,7 +185,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                 borderRadius: "9px",
                 border: "2px solid",
                 borderColor: alpha(accentColor, 0.2),
-                background: `linear-gradient(135deg, ${alpha(accentColor, 0.1)}, ${alpha(accentColor, 0.05)})`,
+                background: alpha(accentColor, 0.1),
                 transition: "all 180ms ease",
               }}
             >
@@ -193,10 +193,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                 sx={{
                   fontSize: { xs: "12px", sm: "13px" },
                   fontWeight: 800,
-                  background: `linear-gradient(135deg, ${accentColor}, #06B6D4)`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  color: accentColor,
                   whiteSpace: "nowrap",
                   fontVariantNumeric: "tabular-nums",
                   letterSpacing: "-0.02em",

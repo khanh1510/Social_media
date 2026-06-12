@@ -1,31 +1,33 @@
 "use client";
 
-import { Box, Typography, alpha } from "@mui/material";
-import { Wallet, PlusCircle, History, CircleDollarSign, CreditCard, MessageSquare, Check, Mail, Info, Inbox } from "lucide-react";
+import { Box, Typography, alpha, Alert, CircularProgress, InputBase } from "@mui/material";
+import { Wallet, PlusCircle, History, CircleDollarSign, CreditCard, MessageSquare, Check, Mail, Info, Inbox, ExternalLink } from "lucide-react";
 import { siTelegram } from "simple-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { paymentsApi, ApiError } from "@/lib/api";
+import type { PaymentIntent } from "@/lib/api/types";
+import { formatVND } from "@/lib/format";
 
-// Payment gateway definitions
-type GatewayId = "admin" | "acb" | "vietcombank" | "techcombank" | "mbbank" | "tpbank";
-
+// Cổng thanh toán: "admin" là kênh thủ công, còn lại lấy từ backend GET /payments/gateways
 interface Gateway {
-  id: GatewayId;
+  id: string;
   name: string;
   subtitle: string;
   color: string;
   isAdmin?: boolean;
 }
 
-const GATEWAYS: Gateway[] = [
-  { id: "admin", name: "Liên hệ Admin", subtitle: "Chuyển khoản thủ công", color: "#2563EB", isAdmin: true },
-  { id: "acb", name: "ACB", subtitle: "Ngân hàng ACB", color: "#0052A5" },
-  { id: "vietcombank", name: "Vietcombank", subtitle: "Ngân hàng VCB", color: "#007B40" },
-  { id: "techcombank", name: "Techcombank", subtitle: "Ngân hàng TCB", color: "#CC0000" },
-  { id: "mbbank", name: "MB Bank", subtitle: "Ngân hàng MB", color: "#7B3F9E" },
-  { id: "tpbank", name: "TPBank", subtitle: "Ngân hàng TPBank", color: "#FF6600" },
-];
+const ADMIN_GATEWAY: Gateway = { id: "admin", name: "Liên hệ Admin", subtitle: "Chuyển khoản thủ công", color: "#2563EB", isAdmin: true };
 
-// Bank abbreviations displayed as text logos
+// Chỉ hiển thị các cổng được phép: liên hệ thủ công + VNPay + MoMo
+const GATEWAY_DISPLAY: Record<string, { name: string; subtitle: string; color: string }> = {
+  vnpay: { name: "VNPay", subtitle: "QR / Thẻ nội địa", color: "#005BAA" },
+  momo: { name: "MoMo", subtitle: "Ví điện tử MoMo", color: "#A50064" },
+};
+const ALLOWED_GATEWAYS = Object.keys(GATEWAY_DISPLAY);
+
+// Logo dạng chữ cho gateway
 function BankLogo({ gateway }: { gateway: Gateway }) {
   if (gateway.isAdmin) {
     return <MessageSquare size={20} color={gateway.color} />;
@@ -45,33 +47,98 @@ function BankLogo({ gateway }: { gateway: Gateway }) {
   );
 }
 
+const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
+
 // Contact channels shown when Admin is selected
 const CONTACT_CHANNELS = [
   { icon: <Mail size={18} color="white" />, label: "Email", value: "support@socialmedia.vn", color: "#2563EB" },
   { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d={siTelegram.path} /></svg>, label: "Telegram", value: "@SocialMediaVN", color: "#0284C7" },
 ];
 
-// Mock history
-const HISTORY = [
-  { id: "TXN-001", method: "ACB", amount: 500000, status: "success", time: "31/05/2026 14:32" },
-  { id: "TXN-002", method: "Liên hệ Admin", amount: 200000, status: "success", time: "28/05/2026 09:14" },
-  { id: "TXN-003", method: "Vietcombank", amount: 1000000, status: "pending", time: "25/05/2026 17:48" },
-];
-
 const STATUS_CONFIG = {
-  success: { label: "Thành công", bg: alpha("#10B981", 0.1), color: "#059669" },
-  pending: { label: "Đang xử lý", bg: alpha("#F59E0B", 0.1), color: "#D97706" },
-  failed: { label: "Thất bại", bg: alpha("#EF4444", 0.1), color: "#DC2626" },
+  PAID: { label: "Thành công", bg: alpha("#10B981", 0.1), color: "#059669" },
+  PENDING: { label: "Đang xử lý", bg: alpha("#F59E0B", 0.1), color: "#D97706" },
+  FAILED: { label: "Thất bại", bg: alpha("#EF4444", 0.1), color: "#DC2626" },
+  EXPIRED: { label: "Hết hạn", bg: alpha("#94A3B8", 0.1), color: "#64748B" },
+  REFUNDED: { label: "Đã hoàn", bg: alpha("#0EA5E9", 0.1), color: "#0284C7" },
 };
 
 export default function DepositPage() {
+  const { user, wallet } = useAuth();
   const [activeTab, setActiveTab] = useState<"methods" | "history">("methods");
-  const [selectedGateway, setSelectedGateway] = useState<GatewayId>("admin");
+  const [selectedGateway, setSelectedGateway] = useState<string>("admin");
+  const [gateways, setGateways] = useState<Gateway[]>([ADMIN_GATEWAY]);
+  const [amount, setAmount] = useState<number>(100000);
+  const [creating, setCreating] = useState(false);
+  const [intentError, setIntentError] = useState("");
+  const [createdIntent, setCreatedIntent] = useState<PaymentIntent | null>(null);
+  const [history, setHistory] = useState<PaymentIntent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
-  const gateway = GATEWAYS.find((g) => g.id === selectedGateway)!;
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await paymentsApi.gateways();
+        setGateways([
+          ADMIN_GATEWAY,
+          ...list
+            .filter((g) => g.active && ALLOWED_GATEWAYS.includes(g.name))
+            .map((g) => ({
+              id: g.name,
+              ...GATEWAY_DISPLAY[g.name],
+            })),
+        ]);
+      } catch {
+        // giữ tối thiểu kênh admin
+      }
+    })();
+    (async () => {
+      try {
+        const res = await paymentsApi.history(1, 20);
+        setHistory(res.data);
+      } catch {
+        // bỏ qua
+      } finally {
+        setHistoryLoading(false);
+      }
+    })();
+  }, []);
+
+  async function handleCreateIntent() {
+    if (creating) return;
+    setIntentError("");
+    setCreatedIntent(null);
+    if (!amount || amount < 10000) {
+      setIntentError("Số tiền nạp tối thiểu 10.000 ₫.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const intent = await paymentsApi.createIntent({
+        amount: String(amount),
+        gateway: selectedGateway,
+        returnUrl: window.location.origin + "/deposit",
+      });
+      setCreatedIntent(intent);
+      if (intent.redirectUrl) {
+        window.open(intent.redirectUrl, "_blank", "noopener");
+      }
+      // làm mới lịch sử
+      try {
+        const res = await paymentsApi.history(1, 20);
+        setHistory(res.data);
+      } catch { /* bỏ qua */ }
+    } catch (err) {
+      setIntentError(err instanceof ApiError ? err.message : "Không tạo được yêu cầu nạp tiền.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const gateway = gateways.find((g) => g.id === selectedGateway) ?? ADMIN_GATEWAY;
 
   return (
-    <Box sx={{ maxWidth: 860 }}>
+    <Box sx={{ width: "100%" }}>
       {/* Hero section */}
       <Box
         sx={{
@@ -80,28 +147,28 @@ export default function DepositPage() {
           borderRadius: "18px",
           border: "1px solid",
           borderColor: alpha("#0EA5E9", 0.25),
-          background: "linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #ECFEFF 100%)",
+          background: "#F0F9FF",
           px: { xs: 2.5, sm: 3 },
           py: { xs: 2.5, sm: 3 },
           mb: 3,
         }}
       >
         {/* Blobs */}
-        <Box sx={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(14,165,233,0.18)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(6,182,212,0.15)", pointerEvents: "none" }} />
 
         <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
           {/* Left: icon + title */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 0 }}>
             <Box sx={{ position: "relative", flexShrink: 0 }}>
-              <Box sx={{ position: "absolute", inset: -4, borderRadius: "14px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4)", filter: "blur(8px)", opacity: 0.4 }} />
+              <Box sx={{ position: "absolute", inset: -4, borderRadius: "14px", background: "#0EA5E9", filter: "blur(8px)", opacity: 0.4 }} />
               <Box
                 sx={{
                   position: "relative",
                   width: 48,
                   height: 48,
                   borderRadius: "14px",
-                  background: "linear-gradient(135deg, #0EA5E9, #06B6D4, #3B82F6)",
+                  background: "#0EA5E9",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -116,7 +183,7 @@ export default function DepositPage() {
                 Nạp tiền
               </Typography>
               <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-                Xin chào <Box component="span" sx={{ fontWeight: 700, color: "primary.main" }}>mitnicklegend_4036</Box>, chọn phương thức và nạp ngay
+                Xin chào <Box component="span" sx={{ fontWeight: 700, color: "primary.main" }}>{user?.username ?? ""}</Box>, chọn phương thức và nạp ngay
               </Typography>
             </Box>
           </Box>
@@ -142,7 +209,7 @@ export default function DepositPage() {
                 Số dư hiện tại
               </Typography>
               <Typography sx={{ fontSize: { xs: "15px", sm: "17px" }, fontWeight: 800, color: "#0284C7", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
-                0 ₫
+                {wallet ? formatVND(wallet.balance) : "—"}
               </Typography>
             </Box>
           </Box>
@@ -185,7 +252,7 @@ export default function DepositPage() {
                 fontSize: { xs: "12px", sm: "13px" },
                 fontWeight: 600,
                 transition: "all 200ms ease",
-                background: active ? "linear-gradient(135deg, #0EA5E9, #06B6D4)" : "transparent",
+                background: active ? "#0EA5E9" : "transparent",
                 color: active ? "white" : "text.secondary",
                 boxShadow: active ? "0 2px 8px rgba(14,165,233,0.3)" : "none",
                 "&:hover": {
@@ -222,7 +289,7 @@ export default function DepositPage() {
                   width: 28,
                   height: 28,
                   borderRadius: "8px",
-                  background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+                  background: "#0EA5E9",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -249,7 +316,7 @@ export default function DepositPage() {
                 gap: 1,
               }}
             >
-              {GATEWAYS.map((gw) => {
+              {gateways.map((gw) => {
                 const isSelected = selectedGateway === gw.id;
                 return (
                   <Box
@@ -452,7 +519,7 @@ export default function DepositPage() {
                 </Box>
               </Box>
             ) : (
-              /* Bank transfer panel */
+              /* Gateway deposit panel */
               <Box
                 sx={{
                   borderRadius: "14px",
@@ -463,44 +530,88 @@ export default function DepositPage() {
                 }}
               >
                 <Typography sx={{ fontSize: "14px", fontWeight: 700, color: gateway.color, mb: 2 }}>
-                  Thông tin chuyển khoản — {gateway.name}
+                  Nạp tiền qua {gateway.name}
                 </Typography>
 
-                {/* Bank info rows */}
-                {[
-                  { label: "Ngân hàng", value: gateway.name },
-                  { label: "Số tài khoản", value: "1234 5678 9012 3456" },
-                  { label: "Chủ tài khoản", value: "NGUYEN VAN A" },
-                  { label: "Chi nhánh", value: "Hồ Chí Minh" },
-                  { label: "Nội dung CK", value: "NAP mitnicklegend_4036" },
-                ].map((row, i, arr) => (
-                  <Box
-                    key={row.label}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      py: 1.25,
-                      borderBottom: i < arr.length - 1 ? "1px solid" : "none",
-                      borderColor: "divider",
-                      gap: 2,
-                    }}
-                  >
-                    <Typography sx={{ fontSize: "12px", color: "text.secondary", flexShrink: 0 }}>{row.label}</Typography>
-                    <Typography
+                {/* Amount input */}
+                <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>
+                  Số tiền cần nạp (VND)
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex", alignItems: "center", gap: 1,
+                    px: 1.5, height: 44,
+                    borderRadius: "10px",
+                    border: "1.5px solid",
+                    borderColor: "divider",
+                    bgcolor: "background.paper",
+                    "&:focus-within": {
+                      borderColor: alpha(gateway.color, 0.5),
+                      boxShadow: `0 0 0 3px ${alpha(gateway.color, 0.08)}`,
+                    },
+                  }}
+                >
+                  <CircleDollarSign size={16} color={gateway.color} style={{ flexShrink: 0 }} />
+                  <InputBase
+                    type="number"
+                    value={amount || ""}
+                    onChange={(e) => setAmount(Number(e.target.value))}
+                    placeholder="100000"
+                    fullWidth
+                    sx={{ fontSize: "14px", fontWeight: 700, "& input": { p: 0 } }}
+                  />
+                  <Typography sx={{ fontSize: "12px", color: "text.disabled", flexShrink: 0 }}>
+                    = {formatVND(amount || 0)}
+                  </Typography>
+                </Box>
+
+                {/* Quick amounts */}
+                <Box sx={{ display: "flex", gap: 0.75, mt: 1.25, flexWrap: "wrap" }}>
+                  {QUICK_AMOUNTS.map((qa) => (
+                    <Box
+                      key={qa}
+                      component="button"
+                      type="button"
+                      onClick={() => setAmount(qa)}
                       sx={{
-                        fontSize: "12px",
-                        fontWeight: row.label === "Nội dung CK" ? 800 : 600,
-                        color: row.label === "Nội dung CK" ? gateway.color : "text.primary",
-                        fontFamily: row.label === "Số tài khoản" || row.label === "Nội dung CK" ? "monospace" : "inherit",
-                        textAlign: "right",
-                        wordBreak: "break-all",
+                        px: 1.25, py: 0.5,
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: amount === qa ? gateway.color : "divider",
+                        bgcolor: amount === qa ? alpha(gateway.color, 0.06) : "background.paper",
+                        color: amount === qa ? gateway.color : "text.secondary",
+                        fontSize: "12px", fontWeight: 600,
+                        cursor: "pointer",
                       }}
                     >
-                      {row.value}
-                    </Typography>
-                  </Box>
-                ))}
+                      {formatVND(qa)}
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Kết quả tạo yêu cầu */}
+                {intentError && <Alert severity="error" sx={{ mt: 2 }}>{intentError}</Alert>}
+                {createdIntent && (
+                  <Alert severity="success" sx={{ mt: 2 }}>
+                    Đã tạo yêu cầu nạp <b>{formatVND(createdIntent.amount)}</b> qua <b>{gateway.name}</b>.
+                    {createdIntent.redirectUrl ? (
+                      <>
+                        {" "}
+                        <Box
+                          component="a"
+                          href={createdIntent.redirectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ color: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 0.5 }}
+                        >
+                          Mở trang thanh toán <ExternalLink size={12} />
+                        </Box>
+                      </>
+                    ) : (
+                      " Theo dõi trạng thái ở tab Lịch Sử."
+                    )}
+                  </Alert>
+                )}
 
                 {/* Info note */}
                 <Box
@@ -517,7 +628,7 @@ export default function DepositPage() {
                 >
                   <Info size={14} color={gateway.color} style={{ flexShrink: 0, marginTop: 1 }} />
                   <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.5 }}>
-                    Nhập đúng nội dung chuyển khoản để hệ thống tự động xác nhận. Thời gian xử lý: <Box component="strong" sx={{ color: "text.primary" }}>5–15 phút</Box>.
+                    Sau khi thanh toán thành công, số dư sẽ được cộng tự động qua webhook. Yêu cầu nạp hết hạn sau <Box component="strong" sx={{ color: "text.primary" }}>60 phút</Box>.
                   </Typography>
                 </Box>
               </Box>
@@ -527,18 +638,19 @@ export default function DepositPage() {
             <Box sx={{ mt: 2.5 }}>
               <Box
                 component="button"
-                disabled={gateway.isAdmin}
+                disabled={gateway.isAdmin || creating}
+                onClick={() => void handleCreateIntent()}
                 sx={{
                   width: "100%",
                   py: 1.375,
                   borderRadius: "12px",
                   border: "none",
-                  background: "linear-gradient(135deg, #2563EB, #0EA5E9)",
+                  background: "#2563EB",
                   color: "white",
                   fontSize: { xs: "13px", sm: "14px" },
                   fontWeight: 700,
                   cursor: gateway.isAdmin ? "default" : "pointer",
-                  opacity: gateway.isAdmin ? 0.6 : 1,
+                  opacity: gateway.isAdmin || creating ? 0.6 : 1,
                   boxShadow: "0 2px 10px rgba(37,99,235,0.25)",
                   transition: "all 200ms ease",
                   "&:not(:disabled):hover": {
@@ -549,12 +661,16 @@ export default function DepositPage() {
                   "&:active": { transform: "scale(0.99)" },
                 }}
               >
-                {gateway.isAdmin ? "Vui lòng liên hệ Admin" : `Xác nhận nạp tiền qua ${gateway.name}`}
+                {gateway.isAdmin
+                  ? "Vui lòng liên hệ Admin"
+                  : creating
+                  ? "Đang tạo yêu cầu..."
+                  : `Xác nhận nạp ${formatVND(amount || 0)} qua ${gateway.name}`}
               </Box>
               <Typography sx={{ fontSize: "11px", color: "text.disabled", textAlign: "center", mt: 1 }}>
                 {gateway.isAdmin
                   ? "Nhắn tin cho Admin để được hỗ trợ nạp tiền"
-                  : "Sau khi chuyển khoản, nhấn xác nhận để hệ thống kiểm tra"}
+                  : "Hệ thống sẽ tạo yêu cầu thanh toán và chuyển bạn tới cổng thanh toán"}
               </Typography>
             </Box>
           </Box>
@@ -579,15 +695,20 @@ export default function DepositPage() {
             </Typography>
           </Box>
 
-          {HISTORY.length === 0 ? (
+          {historyLoading ? (
+            <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+              <CircularProgress />
+            </Box>
+          ) : history.length === 0 ? (
             <Box sx={{ py: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
               <Inbox size={36} color="#94A3B8" />
               <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Chưa có giao dịch nào.</Typography>
             </Box>
           ) : (
             <Box>
-              {HISTORY.map((tx, i) => {
-                const st = STATUS_CONFIG[tx.status as keyof typeof STATUS_CONFIG];
+              {history.map((tx, i) => {
+                const st = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.PENDING;
+                const display = GATEWAY_DISPLAY[tx.gateway];
                 return (
                   <Box
                     key={tx.id}
@@ -597,7 +718,7 @@ export default function DepositPage() {
                       gap: 2,
                       px: { xs: 2, sm: 3 },
                       py: 1.75,
-                      borderBottom: i < HISTORY.length - 1 ? "1px solid" : "none",
+                      borderBottom: i < history.length - 1 ? "1px solid" : "none",
                       borderColor: "divider",
                     }}
                   >
@@ -620,17 +741,18 @@ export default function DepositPage() {
                     {/* Info */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "text.primary" }}>
-                        {tx.method}
+                        {display?.name ?? tx.gateway}
                       </Typography>
                       <Typography sx={{ fontSize: "11px", color: "text.disabled" }}>
-                        {tx.id} · {tx.time}
+                        {tx.id.slice(0, 8).toUpperCase()}
+                        {tx.createdAt ? ` · ${new Date(tx.createdAt).toLocaleString("vi-VN")}` : ""}
                       </Typography>
                     </Box>
 
                     {/* Amount + status */}
                     <Box sx={{ textAlign: "right", flexShrink: 0 }}>
                       <Typography sx={{ fontSize: "13px", fontWeight: 800, color: "#059669", fontVariantNumeric: "tabular-nums" }}>
-                        +{tx.amount.toLocaleString("vi-VN")} ₫
+                        +{formatVND(tx.amount)}
                       </Typography>
                       <Box
                         component="span"

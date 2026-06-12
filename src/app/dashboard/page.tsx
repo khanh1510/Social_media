@@ -1,83 +1,104 @@
+"use client";
+
 import { Box, Grid, Typography, Button, alpha } from "@mui/material";
 import { Wallet, PiggyBank, TrendingUp, Target, ArrowRight, Bell } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import NotificationCard from "@/components/dashboard/NotificationCard";
 import OrderStatistics from "@/components/dashboard/OrderStatistics";
+import { useAuth } from "@/contexts/AuthContext";
+import { notificationsApi, ordersApi } from "@/lib/api";
+import type { ApiNotification } from "@/lib/api/types";
+import { formatVND } from "@/lib/format";
 import type { StatCardData, Notification } from "@/types";
 
-const statCards: StatCardData[] = [
-  {
-    id: "balance",
-    label: "Số Dư Hiện Tại",
-    value: "0 ₫",
-    icon: <Wallet size={22} color="#2563EB" />,
-    color: "primary",
-  },
-  {
-    id: "deposited",
-    label: "Tổng Đã Nạp",
-    value: "0 ₫",
-    icon: <PiggyBank size={22} color="#10B981" />,
-    color: "success",
-  },
-  {
-    id: "revenue",
-    label: "Tổng Thu Nhập",
-    value: "0 ₫",
-    icon: <TrendingUp size={22} color="#0EA5E9" />,
-    color: "info",
-  },
-  {
-    id: "rank",
-    label: "Hạng",
-    value: "Đồng",
-    icon: <Target size={22} color="#06B6D4" />,
-    color: "warning",
-  },
-];
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${Math.max(mins, 1)} phút`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} giờ`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} ngày`;
+  return `${Math.floor(days / 7)} tuần`;
+}
 
-const notifications: Notification[] = [
-  {
-    id: "1",
-    userName: "Nguyễn Văn An",
+function toUiNotification(n: ApiNotification): Notification {
+  return {
+    id: n.id,
+    userName: "Hệ thống",
     verified: true,
-    platform: "facebook",
-    timeAgo: "3 ngày",
-    title: "Đơn hàng #FB-2401 đã hoàn thành",
-    description: "Dịch vụ tăng 500 like Facebook của bạn đã được xử lý thành công. Cảm ơn bạn đã sử dụng dịch vụ.",
-  },
-  {
-    id: "2",
-    userName: "Trần Thị Bình",
-    verified: false,
-    platform: "tiktok",
-    timeAgo: "5 ngày",
-    title: "Đơn hàng #TK-1893 đang xử lý",
-    description: "Dịch vụ tăng follow TikTok đang trong quá trình xử lý, dự kiến hoàn thành trong 24 giờ.",
-  },
-  {
-    id: "3",
-    userName: "Lê Minh Châu",
-    verified: true,
-    platform: "instagram",
-    timeAgo: "1 tuần",
-    title: "Nạp tiền thành công",
-    description: "Tài khoản của bạn đã được cộng 200,000 ₫. Số dư khả dụng hiện tại: 200,000 ₫.",
-  },
-  {
-    id: "4",
-    userName: "Phạm Quốc Đạt",
-    verified: true,
-    platform: "youtube",
-    timeAgo: "2 tuần",
-    title: "Đơn hàng #YT-0562 hoàn thành",
-    description: "1,000 view YouTube đã được thêm vào video của bạn. Hãy kiểm tra và phản hồi nếu có vấn đề.",
-  },
-];
+    platform: "global",
+    timeAgo: timeAgo(n.createdAt),
+    title: n.title,
+    description: n.body,
+  };
+}
 
 export default function DashboardPage() {
+  const { user, wallet, refreshWallet } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
+
+  useEffect(() => {
+    void refreshWallet();
+    (async () => {
+      try {
+        const res = await notificationsApi.me();
+        const list = Array.isArray(res) ? res : res.data;
+        setNotifications(list.slice(0, 5).map(toUiNotification));
+      } catch {
+        // thông báo lỗi không chặn dashboard
+      }
+    })();
+    (async () => {
+      try {
+        const res = await ordersApi.list({ page: 1, limit: 1 });
+        setTotalOrders(res.meta.total);
+      } catch {
+        // bỏ qua
+      }
+    })();
+  }, [refreshWallet]);
+
+  const statCards: StatCardData[] = useMemo(
+    () => [
+      {
+        id: "balance",
+        label: "Số Dư Hiện Tại",
+        value: wallet ? formatVND(wallet.balance) : "—",
+        icon: <Wallet size={22} color="#2563EB" />,
+        color: "primary",
+      },
+      {
+        id: "deposited",
+        label: "Tổng Đã Nạp",
+        value: wallet ? formatVND(wallet.totalDeposited) : "—",
+        icon: <PiggyBank size={22} color="#10B981" />,
+        color: "success",
+      },
+      {
+        id: "spent",
+        label: "Tổng Đã Chi",
+        value: wallet ? formatVND(wallet.totalSpent) : "—",
+        icon: <TrendingUp size={22} color="#0EA5E9" />,
+        color: "info",
+      },
+      {
+        id: "orders",
+        label: "Tổng Đơn Hàng",
+        value: totalOrders !== null ? totalOrders.toLocaleString("vi-VN") : "—",
+        icon: <Target size={22} color="#06B6D4" />,
+        color: "warning",
+      },
+    ],
+    [wallet, totalOrders],
+  );
+
+  const greetName = user?.fullName || user?.username || "";
+
   return (
-    <Box sx={{ maxWidth: 1400 }}>
+    <Box sx={{ width: "100%" }}>
       {/* Welcome */}
       <Box sx={{ mb: 3 }}>
         <Typography
@@ -89,7 +110,7 @@ export default function DashboardPage() {
             letterSpacing: "-0.02em",
           }}
         >
-          Xin chào, John 👋
+          Xin chào, {greetName} 👋
         </Typography>
         <Typography sx={{ fontSize: "14px", color: "text.secondary", mt: 0.5 }}>
           Đây là tổng quan tài khoản của bạn hôm nay.
@@ -137,7 +158,7 @@ export default function DashboardPage() {
                   Thông Báo
                 </Typography>
                 <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-                  {notifications.length} thông báo mới
+                  {notifications.length} thông báo
                 </Typography>
               </Box>
             </Box>
@@ -161,9 +182,15 @@ export default function DashboardPage() {
 
           {/* Notification list — stacked vertically */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {notifications.map((notif) => (
-              <NotificationCard key={notif.id} notification={notif} />
-            ))}
+            {notifications.length === 0 ? (
+              <Typography sx={{ fontSize: "13px", color: "text.secondary", py: 3, textAlign: "center" }}>
+                Chưa có thông báo nào.
+              </Typography>
+            ) : (
+              notifications.map((notif) => (
+                <NotificationCard key={notif.id} notification={notif} />
+              ))
+            )}
           </Box>
         </Grid>
 

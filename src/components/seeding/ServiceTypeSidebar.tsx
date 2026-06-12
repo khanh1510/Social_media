@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   siFacebook, siTiktok, siInstagram, siYoutube, siX, siGoogle, siTelegram,
 } from "simple-icons";
-import { serviceTypesByPlatform } from "@/data/orders";
+import type { CatalogPlatform } from "@/hooks/useCatalog";
 import type { PlatformId } from "@/types";
 
 function SiIcon({ icon, size = 18, color }: { icon: { path: string }; size?: number; color: string }) {
@@ -38,19 +38,7 @@ const platformConfig: Record<PlatformId, {
     label: "Instagram",
     color: "#C13584",
     bg: "#FDF2F8",
-    logo: (
-      <svg width="20" height="20" viewBox="0 0 24 24" role="img" aria-hidden="true">
-        <defs>
-          <linearGradient id="ig-grad-sb" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#FFDC80" />
-            <stop offset="30%" stopColor="#F77737" />
-            <stop offset="65%" stopColor="#C13584" />
-            <stop offset="100%" stopColor="#833AB4" />
-          </linearGradient>
-        </defs>
-        <path fill="url(#ig-grad-sb)" d={siInstagram.path} />
-      </svg>
-    ),
+    logo: <SiIcon icon={siInstagram} color="#C13584" size={20} />,
   },
   youtube: {
     label: "YouTube",
@@ -78,16 +66,22 @@ const platformConfig: Record<PlatformId, {
   },
 };
 
-const platformOrder: PlatformId[] = ["facebook", "tiktok", "instagram", "youtube", "twitter", "google", "telegram"];
-
 interface Props {
+  /** Danh sách platform (category cha) từ backend */
+  platforms: CatalogPlatform[];
   activePlatform: PlatformId;
-  activeServiceType: string;
+  /** Slug category con đang chọn */
+  activeCategorySlug: string;
 }
 
-export default function ServiceTypeSidebar({ activePlatform, activeServiceType }: Props) {
-  const config = platformConfig[activePlatform];
-  const serviceTypes = serviceTypesByPlatform[activePlatform] ?? [];
+export default function ServiceTypeSidebar({ platforms, activePlatform, activeCategorySlug }: Props) {
+  const config = platformConfig[activePlatform] ?? platformConfig.facebook;
+  const activeCatalog = platforms.find((p) => p.slug === activePlatform);
+  const serviceTypes = (activeCatalog?.children ?? []).map((c) => ({ key: c.slug, label: c.label }));
+  // Chỉ hiện platform có trong catalog backend và có config màu/logo
+  const platformOrder = platforms
+    .map((p) => p.slug)
+    .filter((slug): slug is PlatformId => slug in platformConfig);
 
   return (
     <Box
@@ -117,7 +111,7 @@ export default function ServiceTypeSidebar({ activePlatform, activeServiceType }
           {platformOrder.map((pid) => {
             const pcfg = platformConfig[pid];
             const isActive = pid === activePlatform;
-            const firstType = serviceTypesByPlatform[pid]?.[0]?.key ?? "";
+            const firstType = platforms.find((p) => p.slug === pid)?.children[0]?.slug ?? "";
             return (
               <Box
                 key={pid}
@@ -183,7 +177,7 @@ export default function ServiceTypeSidebar({ activePlatform, activeServiceType }
         </Typography>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
           {serviceTypes.map(({ key, label }) => {
-            const isActive = key === activeServiceType;
+            const isActive = key === activeCategorySlug;
             return (
               <Box
                 key={key}

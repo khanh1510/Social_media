@@ -1,40 +1,73 @@
 "use client";
 
-import { Box, Typography, alpha } from "@mui/material";
-import { Suspense } from "react";
+import { Box, CircularProgress, Typography, alpha } from "@mui/material";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { PlusCircle, ClipboardList } from "lucide-react";
 import ServiceTypeSidebar from "@/components/seeding/ServiceTypeSidebar";
 import CreateOrderForm from "@/components/seeding/CreateOrderForm";
 import OrderHistory from "@/components/seeding/OrderHistory";
-import { serviceTypesByPlatform } from "@/data/orders";
 import { platformColors } from "@/data/services";
+import { toUiService, useCatalog } from "@/hooks/useCatalog";
 import type { PlatformId } from "@/types";
 
 const VALID_PLATFORMS: PlatformId[] = ["facebook", "tiktok", "instagram", "youtube", "twitter", "google", "telegram"];
 
 function SeedingContent() {
   const searchParams = useSearchParams();
+  const { platforms, loading, servicesByCategorySlug, servicesByPlatform } = useCatalog();
 
   const rawPlatform = searchParams.get("platform") ?? "facebook";
   const platform: PlatformId = VALID_PLATFORMS.includes(rawPlatform as PlatformId)
     ? (rawPlatform as PlatformId)
     : "facebook";
 
-  const types = serviceTypesByPlatform[platform] ?? [];
-  const rawType = searchParams.get("serviceType") ?? types[0]?.key ?? "";
-  const serviceType = types.some((t) => t.key === rawType) ? rawType : (types[0]?.key ?? "");
+  // "Loại dịch vụ" = category con thật từ backend (slug). Hỗ trợ cả key cũ kiểu "Like"
+  // (từ sidebar chính) bằng cách map mờ sang slug chứa từ khóa tương ứng.
+  const types = useMemo(() => {
+    const p = platforms.find((x) => x.slug === platform);
+    return (p?.children ?? []).map((c) => ({ key: c.slug, label: c.label }));
+  }, [platforms, platform]);
+
+  const rawType = searchParams.get("serviceType") ?? "";
+  const serviceType = useMemo(() => {
+    if (types.some((t) => t.key === rawType)) return rawType;
+    const keyword = rawType.toLowerCase().replace(/\s+/g, "-");
+    const KEYWORD_MAP: Record<string, string> = {
+      follow: "follower", subscribe: "subscriber", member: "member",
+      view: "view", like: "like", comment: "comment", share: "share",
+      retweet: "repost", livestream: "live",
+    };
+    const mapped = KEYWORD_MAP[keyword] ?? keyword;
+    const fuzzy = types.find((t) => t.key.includes(mapped));
+    return (fuzzy ?? types[0])?.key ?? "";
+  }, [types, rawType]);
+
+  const services = useMemo(() => {
+    const inCategory = serviceType ? servicesByCategorySlug(serviceType) : [];
+    // category con không có dịch vụ → hiện toàn bộ dịch vụ của platform
+    const list = inCategory.length > 0 ? inCategory : servicesByPlatform(platform);
+    return list.map(toUiService);
+  }, [serviceType, platform, servicesByCategorySlug, servicesByPlatform]);
 
   const rawTab = searchParams.get("tab") ?? "order";
   const tab: "order" | "history" = rawTab === "history" ? "history" : "order";
 
   const colors = platformColors[platform] ?? platformColors.facebook;
-  const typeLabel = types.find((t) => t.key === serviceType)?.label ?? serviceType;
+  const typeLabel = types.find((t) => t.key === serviceType)?.label ?? "Dịch vụ";
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ maxWidth: 1200, display: "flex", gap: 2.5, alignItems: "flex-start" }}>
+    <Box sx={{ width: "100%", display: "flex", gap: 2.5, alignItems: "flex-start" }}>
       {/* Left: platform + service type sidebar */}
-      <ServiceTypeSidebar activePlatform={platform} activeServiceType={serviceType} />
+      <ServiceTypeSidebar platforms={platforms} activePlatform={platform} activeCategorySlug={serviceType} />
 
       {/* Right: main content */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -125,9 +158,9 @@ function SeedingContent() {
           }}
         >
           {tab === "order" ? (
-            <CreateOrderForm platform={platform} serviceType={serviceType} />
+            <CreateOrderForm platform={platform} services={services} />
           ) : (
-            <OrderHistory platform={platform} serviceType={serviceType} />
+            <OrderHistory />
           )}
         </Box>
       </Box>

@@ -1,19 +1,21 @@
 "use client";
 
-import { Box, Typography, InputBase, alpha, Slider } from "@mui/material";
+import { Box, Typography, InputBase, alpha, Slider, Alert, CircularProgress } from "@mui/material";
 import { Link2, FileText, ShoppingCart, Zap, Clock, Shield, CheckCircle2 } from "lucide-react";
-import { useState, useMemo } from "react";
-import { servicesData } from "@/data/services";
+import { useState } from "react";
 import { platformColors } from "@/data/services";
+import { ordersApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import type { PlatformId, Service } from "@/types";
 
 function formatVND(n: number) {
-  return n.toLocaleString("vi-VN") + " ₫";
+  return n.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + " ₫";
 }
 
 interface Props {
   platform: PlatformId;
-  serviceType: string;
+  /** Dịch vụ thật từ backend (đã map sang UI shape) */
+  services: Service[];
 }
 
 const speedLabel: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -22,24 +24,21 @@ const speedLabel: Record<string, { label: string; icon: React.ReactNode; color: 
   slow: { label: "Chậm", icon: <Clock size={13} />, color: "#EF4444" },
 };
 
-export default function CreateOrderForm({ platform, serviceType }: Props) {
+export default function CreateOrderForm({ platform, services }: Props) {
   const colors = platformColors[platform] ?? platformColors.facebook;
-
-  const services: Service[] = useMemo(() => {
-    const cat = servicesData.find((c) => c.id === platform);
-    if (!cat) return [];
-    return cat.services.filter((s) =>
-      s.name.toLowerCase().includes(serviceType.toLowerCase())
-    );
-  }, [platform, serviceType]);
+  const { refreshWallet } = useAuth();
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [link, setLink] = useState("");
   const [quantity, setQuantity] = useState(0);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [createdOrderNumber, setCreatedOrderNumber] = useState<number | null>(null);
 
-  const activeService = selectedService ?? services[0] ?? null;
+  const activeService =
+    (selectedService && services.find((s) => s.id === selectedService.id)) ?? services[0] ?? null;
 
   const clampedQty = activeService
     ? Math.min(Math.max(quantity || activeService.min, activeService.min), activeService.max)
@@ -47,11 +46,32 @@ export default function CreateOrderForm({ platform, serviceType }: Props) {
 
   const totalCost = activeService ? clampedQty * activeService.price : 0;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!link.trim() || !activeService) return;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    if (!link.trim() || !activeService || submitting) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      const order = await ordersApi.create({
+        service: activeService.id,
+        link: link.trim(),
+        quantity: clampedQty,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setCreatedOrderNumber(order.orderNumber);
+      setSubmitted(true);
+      setLink("");
+      setQuantity(0);
+      void refreshWallet();
+      setTimeout(() => {
+        setSubmitted(false);
+        setCreatedOrderNumber(null);
+      }, 5000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Không kết nối được máy chủ.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -324,11 +344,19 @@ export default function CreateOrderForm({ platform, serviceType }: Props) {
         </Box>
       )}
 
+      {/* Thông báo kết quả */}
+      {error && <Alert severity="error">{error}</Alert>}
+      {submitted && createdOrderNumber !== null && (
+        <Alert severity="success">
+          Đặt đơn thành công! Mã đơn: <b>#{createdOrderNumber}</b> — xem trong tab Lịch sử đơn.
+        </Alert>
+      )}
+
       {/* Submit button */}
       <Box
         component="button"
         type="submit"
-        disabled={!activeService || !link.trim() || submitted}
+        disabled={!activeService || !link.trim() || submitted || submitting}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -338,8 +366,8 @@ export default function CreateOrderForm({ platform, serviceType }: Props) {
           borderRadius: "12px",
           border: "none",
           background: submitted
-            ? `linear-gradient(135deg, #10B981, #059669)`
-            : `linear-gradient(135deg, ${colors.text}, ${alpha(colors.text, 0.8)})`,
+            ? "#10B981"
+            : colors.text,
           color: "white",
           fontSize: "14px",
           fontWeight: 700,
@@ -353,7 +381,12 @@ export default function CreateOrderForm({ platform, serviceType }: Props) {
           "&:active:not(:disabled)": { transform: "translateY(0)" },
         }}
       >
-        {submitted ? (
+        {submitting ? (
+          <>
+            <CircularProgress size={16} color="inherit" />
+            Đang đặt đơn...
+          </>
+        ) : submitted ? (
           <>
             <CheckCircle2 size={16} />
             Đã đặt đơn thành công!

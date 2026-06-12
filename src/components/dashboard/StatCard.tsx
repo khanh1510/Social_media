@@ -47,7 +47,7 @@ export default function StatCard({ data }: StatCardProps) {
         sx={{
           position: "absolute",
           inset: 0,
-          background: `radial-gradient(ellipse at top right, ${alpha(colors.main, 0.06)} 0%, transparent 60%)`,
+          background: alpha(colors.main, 0.06),
           opacity: 0,
           transition: "opacity 200ms ease",
           pointerEvents: "none",
@@ -111,7 +111,7 @@ export default function StatCard({ data }: StatCardProps) {
           left: 0,
           right: 0,
           height: 2,
-          background: `linear-gradient(90deg, ${colors.main} 0%, ${alpha(colors.main, 0)} 100%)`,
+          background: colors.main,
           opacity: 0,
           transition: "opacity 200ms ease",
           ".MuiCard-root:hover &": {

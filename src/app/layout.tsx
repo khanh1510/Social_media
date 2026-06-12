@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import EmotionRegistry from "@/theme/EmotionRegistry";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+// Inter: variable font (đủ weight 100–900), có subset tiếng Việt
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
   display: "swap",
-  variable: "--font-plus-jakarta",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -17,9 +18,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={plusJakartaSans.variable}>
+    <html lang="vi" className={inter.variable}>
       <body>
-        <EmotionRegistry>{children}</EmotionRegistry>
+        <EmotionRegistry>
+          <AuthProvider>{children}</AuthProvider>
+        </EmotionRegistry>
       </body>
     </html>
   );

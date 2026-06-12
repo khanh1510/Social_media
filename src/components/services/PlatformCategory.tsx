@@ -21,19 +21,7 @@ function SiIcon({ icon, size = 22, color }: { icon: { path: string }; size?: num
 const platformLogos: Record<string, React.ReactNode> = {
   facebook: <SiIcon icon={siFacebook} color={`#${siFacebook.hex}`} />,
   tiktok: <SiIcon icon={siTiktok} color="#010101" />,
-  instagram: (
-    <svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-hidden="true">
-      <defs>
-        <linearGradient id="ig-cat" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FFDC80" />
-          <stop offset="40%" stopColor="#F77737" />
-          <stop offset="70%" stopColor="#C13584" />
-          <stop offset="100%" stopColor="#833AB4" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#ig-cat)" d={siInstagram.path} />
-    </svg>
-  ),
+  instagram: <SiIcon icon={siInstagram} color="#C13584" />,
   youtube: <SiIcon icon={siYoutube} color={`#${siYoutube.hex}`} />,
   twitter: <SiIcon icon={siX} color="#000000" />,
   google: <SiIcon icon={siGoogle} color={`#${siGoogle.hex}`} />,
@@ -192,7 +180,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
             display: "flex",
             flexDirection: "column",
             gap: 0.75,
-            background: `linear-gradient(to bottom, transparent, ${alpha(colors.bg, 0.3)})`,
+            background: alpha(colors.bg, 0.3),
           }}
         >
           {category.services.map((service) => (

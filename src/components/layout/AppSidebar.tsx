@@ -12,7 +12,7 @@ import {
   Tooltip,
   alpha,
 } from "@mui/material";
-import { LayoutDashboard, LayoutGrid, Trophy, User, CreditCard, History, Webhook, Headphones, Globe, ChevronRight } from "lucide-react";
+import { LayoutDashboard, LayoutGrid, User, CreditCard, History, Webhook, Headphones, ChevronRight } from "lucide-react";
 import {
   siFacebook, siTiktok, siInstagram, siYoutube, siX, siGoogle, siTelegram,
 } from "simple-icons";
@@ -34,35 +34,22 @@ function SiIcon({ icon, size = 18, color }: { icon: { path: string }; size?: num
 const platformLogos: Record<string, React.ReactNode> = {
   facebook: <SiIcon icon={siFacebook} color={`#${siFacebook.hex}`} />,
   tiktok: <SiIcon icon={siTiktok} color="#000000" />,
-  instagram: (
-    <svg width="18" height="18" viewBox="0 0 24 24" role="img" aria-hidden="true">
-      <defs>
-        <linearGradient id="si-ig" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FFDC80" />
-          <stop offset="30%" stopColor="#F77737" />
-          <stop offset="65%" stopColor="#C13584" />
-          <stop offset="100%" stopColor="#833AB4" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#si-ig)" d={siInstagram.path} />
-    </svg>
-  ),
+  instagram: <SiIcon icon={siInstagram} color="#C13584" />,
   youtube: <SiIcon icon={siYoutube} color={`#${siYoutube.hex}`} />,
   twitter: <SiIcon icon={siX} color="#000000" />,
   google: <SiIcon icon={siGoogle} color={`#${siGoogle.hex}`} />,
   telegram: <SiIcon icon={siTelegram} color={`#${siTelegram.hex}`} />,
 };
 
-const mainNavItems = [
+// VIP và Website Con tạm ẩn — backend chưa có module tương ứng
+const mainNavItems: { id: string; label: string; icon: React.ElementType; href: string; activeGlow?: boolean; badge?: string }[] = [
   { id: "dashboard", label: "Tổng Quan", icon: LayoutDashboard, href: "/dashboard", activeGlow: true },
   { id: "services", label: "Bảng Giá Dịch Vụ", icon: LayoutGrid, href: "/services" },
-  { id: "vip", label: "Gói VIP", icon: Trophy, href: "/vip", badge: "NEW" },
   { id: "profile", label: "Hồ Sơ", icon: User, href: "/profile" },
   { id: "deposit", label: "Nạp Tiền", icon: CreditCard, href: "/deposit" },
   { id: "history", label: "Lịch Sử Giao Dịch", icon: History, href: "/history" },
   { id: "api", label: "Tài Liệu API", icon: Webhook, href: "/api" },
   { id: "support", label: "Hỗ Trợ", icon: Headphones, href: "/support" },
-  { id: "website", label: "Website Con", icon: Globe, href: "/website" },
 ];
 
 const serviceItems = [
@@ -161,7 +148,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
               width: 36,
               height: 36,
               borderRadius: "10px",
-              background: "linear-gradient(135deg, #1724C9 0%, #0092FF 60%, #45B2FF 100%)",
+              background: "#1724C9",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -247,7 +234,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                      background: isActive ? "linear-gradient(135deg, #3B82F6, #2563EB)" : "transparent",
+                      background: isActive ? "#3B82F6" : "transparent",
                       transition: "all 150ms ease",
                       ...(isActive && { boxShadow: `0 4px 10px ${alpha("#2563EB", 0.35)}` }),
                     }}
@@ -289,7 +276,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                           size="small"
                           sx={{
                             height: 17, fontSize: "9px", fontWeight: 700,
-                            background: "linear-gradient(90deg, #0EA5E9, #06B6D4)",
+                            background: "#0EA5E9",
                             color: "white", border: "none", borderRadius: "5px",
                             "& .MuiChip-label": { px: 0.75 },
                           }}

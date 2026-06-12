@@ -42,7 +42,7 @@ export default function VipPage() {
   }, [platformFilter]);
 
   return (
-    <Box sx={{ maxWidth: 1100 }}>
+    <Box sx={{ width: "100%" }}>
       {/* Hero section */}
       <Box
         sx={{
@@ -50,13 +50,13 @@ export default function VipPage() {
           mb: 3,
           borderRadius: "20px",
           overflow: "hidden",
-          background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0C2340 100%)",
+          background: "#0F172A",
           p: { xs: 3, sm: 4 },
         }}
       >
         {/* Decorative blobs */}
-        <Box sx={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.25) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <Box sx={{ position: "absolute", bottom: -30, left: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(14,165,233,0.25)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", bottom: -30, left: -30, width: 150, height: 150, borderRadius: "50%", background: "rgba(6,182,212,0.2)", pointerEvents: "none" }} />
 
         {/* Icon */}
         <Box
@@ -64,7 +64,7 @@ export default function VipPage() {
             width: 48,
             height: 48,
             borderRadius: "14px",
-            background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+            background: "#0EA5E9",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -79,7 +79,7 @@ export default function VipPage() {
           sx={{
             fontSize: { xs: "22px", sm: "28px" },
             fontWeight: 900,
-            background: "linear-gradient(135deg, #E0F2FE, #BAE6FD, #67E8F9)",
+            background: "#E0F2FE",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -156,7 +156,7 @@ export default function VipPage() {
                 cursor: "pointer",
                 transition: "all 180ms ease",
                 background: active
-                  ? "linear-gradient(135deg, #0EA5E9, #06B6D4)"
+                  ? "#0EA5E9"
                   : "transparent",
                 color: active ? "white" : "text.secondary",
                 boxShadow: active ? `0 2px 10px ${alpha("#0EA5E9", 0.3)}` : "none",
@@ -270,7 +270,7 @@ export default function VipPage() {
               width: 56,
               height: 56,
               borderRadius: "16px",
-              background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+              background: "#0EA5E9",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -283,7 +283,7 @@ export default function VipPage() {
             Bạn chưa đăng ký gói nào
           </Typography>
           <Typography sx={{ fontSize: "13px", color: "text.disabled", textAlign: "center", maxWidth: 280 }}>
-            Chọn tab "Gói có sẵn" để khám phá các gói Auto Seeding và đăng ký ngay.
+            Chọn tab &quot;Gói có sẵn&quot; để khám phá các gói Auto Seeding và đăng ký ngay.
           </Typography>
           <Box
             component="button"
@@ -294,7 +294,7 @@ export default function VipPage() {
               py: 1,
               borderRadius: "10px",
               border: "none",
-              background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+              background: "#0EA5E9",
               color: "white",
               fontSize: "13px",
               fontWeight: 700,

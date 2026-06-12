@@ -75,7 +75,7 @@ const theme = createTheme({
   },
 
   typography: {
-    fontFamily: '"Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif',
+    fontFamily: '"Inter", "Roboto", system-ui, -apple-system, sans-serif',
     h4: {
       fontSize: "22px",
       fontWeight: 700,
@@ -169,7 +169,7 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          fontFamily: '"Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif',
+          fontFamily: '"Inter", "Roboto", system-ui, -apple-system, sans-serif',
           backgroundColor: "#F8FAFC",
         },
         "*": {

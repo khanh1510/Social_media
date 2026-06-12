@@ -4,6 +4,7 @@ import { Box, Typography, alpha } from "@mui/material";
 import { Camera, User, Shield, History, Key } from "lucide-react";
 import { siTelegram } from "simple-icons";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import TabInfo from "@/components/profile/TabInfo";
 import TabSecurity from "@/components/profile/TabSecurity";
 import TabTelegram from "@/components/profile/TabTelegram";
@@ -20,13 +21,14 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "apikey-history", label: "Lịch Sử API Key", icon: <Key size={15} /> },
 ];
 
-const BANNER_GRADIENT = "linear-gradient(135deg, #1E3A5F 0%, #0C4A6E 40%, #0369A1 70%, #0284C7 100%)";
+const BANNER_GRADIENT = "#1E3A5F";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const { user } = useAuth();
 
   return (
-    <Box sx={{ maxWidth: 860 }}>
+    <Box sx={{ width: "100%" }}>
       {/* Profile card */}
       <Box
         sx={{
@@ -46,8 +48,8 @@ export default function ProfilePage() {
           }}
         >
           {/* Decorative blobs */}
-          <Box sx={{ position: "absolute", top: -30, right: -30, width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
-          <Box sx={{ position: "absolute", bottom: -20, left: "30%", width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)", pointerEvents: "none" }} />
+          <Box sx={{ position: "absolute", top: -30, right: -30, width: 180, height: 180, borderRadius: "50%", background: "rgba(14,165,233,0.3)", pointerEvents: "none" }} />
+          <Box sx={{ position: "absolute", bottom: -20, left: "30%", width: 120, height: 120, borderRadius: "50%", background: "rgba(6,182,212,0.25)", pointerEvents: "none" }} />
 
           {/* Avatar positioned at bottom-left of banner */}
           <Box
@@ -73,7 +75,7 @@ export default function ProfilePage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "linear-gradient(135deg, #DBEAFE, #E0F2FE)",
+                  background: "#DBEAFE",
                 }}
               >
                 <User size={46} color="#93C5FD" />
@@ -91,7 +93,7 @@ export default function ProfilePage() {
                   borderRadius: "50%",
                   border: "2px solid",
                   borderColor: "background.paper",
-                  background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+                  background: "#0EA5E9",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -118,13 +120,13 @@ export default function ProfilePage() {
           }}
         >
           <Typography sx={{ fontSize: { xs: "16px", sm: "18px" }, fontWeight: 700, color: "text.primary", lineHeight: 1.3, letterSpacing: "-0.02em" }}>
-            John Kenvin Mitnick
+            {user?.fullName || user?.username || ""}
           </Typography>
           <Typography sx={{ fontSize: "13px", color: "text.secondary", mt: 0.25 }}>
-            mitnicklegend@gmail.com
+            {user?.email ?? ""}
           </Typography>
           <Typography sx={{ fontSize: "12px", color: "text.disabled", mt: 0.25 }}>
-            @mitnicklegend_4036
+            @{user?.username ?? ""}
           </Typography>
         </Box>
       </Box>
@@ -162,7 +164,7 @@ export default function ProfilePage() {
                 cursor: "pointer",
                 transition: "all 200ms ease",
                 background: active
-                  ? "linear-gradient(135deg, #2563EB, #0EA5E9)"
+                  ? "#2563EB"
                   : "transparent",
                 color: active ? "white" : "text.secondary",
                 fontSize: { xs: "11px", sm: "12px" },

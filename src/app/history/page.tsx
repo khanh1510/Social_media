@@ -1,9 +1,10 @@
 "use client";
 
-import { Box, Typography, alpha, InputBase, MenuItem, Select } from "@mui/material";
+import { Box, Typography, alpha, InputBase, MenuItem, Select, CircularProgress, Alert } from "@mui/material";
 import { History, Download, RefreshCw, ArrowDown, ArrowUp, Star, RotateCcw, Search, SlidersHorizontal, CalendarDays, Wallet } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { walletApi, ApiError } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────
 type TxType = "deposit" | "spend" | "vip" | "refund";
@@ -20,19 +21,22 @@ interface Transaction {
   date: string; // ISO
 }
 
-// ── Mock data ────────────────────────────────────────────
-const MOCK: Transaction[] = [
-  { id: "TXN-2026-001", type: "deposit", method: "ACB",          description: "Nạp tiền qua ACB",                 amount:  500000, status: "success", date: "2026-05-31T14:32:00" },
-  { id: "TXN-2026-002", type: "spend",   method: "Hệ thống",     description: "Đặt đơn #ORD-8821 — TikTok Like", amount: -120000, status: "success", date: "2026-05-30T09:14:00" },
-  { id: "TXN-2026-003", type: "vip",     method: "Hệ thống",     description: "Mua gói VIP Like Facebook 30 ngày",amount: -299000, status: "success", date: "2026-05-28T17:48:00" },
-  { id: "TXN-2026-004", type: "deposit", method: "Vietcombank",  description: "Nạp tiền qua Vietcombank",          amount: 1000000, status: "pending", date: "2026-05-27T11:05:00" },
-  { id: "TXN-2026-005", type: "refund",  method: "Hệ thống",     description: "Hoàn tiền đơn #ORD-8700",           amount:   80000, status: "success", date: "2026-05-25T08:20:00" },
-  { id: "TXN-2026-006", type: "spend",   method: "Hệ thống",     description: "Đặt đơn #ORD-8755 — Instagram View",amount:  -45000, status: "failed",  date: "2026-05-24T16:33:00" },
-  { id: "TXN-2026-007", type: "deposit", method: "Liên hệ Admin","description": "Nạp tiền thủ công qua Admin",      amount:  200000, status: "success", date: "2026-05-20T10:00:00" },
-  { id: "TXN-2026-008", type: "spend",   method: "Hệ thống",     description: "Đặt đơn #ORD-8690 — YouTube Sub",   amount:  -35000, status: "success", date: "2026-05-18T13:45:00" },
-  { id: "TXN-2026-009", type: "refund",  method: "Hệ thống",     description: "Hoàn tiền đơn #ORD-8655",           amount:   15000, status: "success", date: "2026-05-15T09:10:00" },
-  { id: "TXN-2026-010", type: "vip",     method: "Hệ thống",     description: "Mua gói VIP View TikTok 3 tháng",  amount: -672300, status: "success", date: "2026-05-10T20:00:00" },
-];
+// Map giao dịch ví backend (TransactionType/TransactionStatus) → shape hiển thị
+const BACKEND_TYPE_MAP: Record<string, TxType> = {
+  DEPOSIT: "deposit",
+  ORDER_DEDUCT: "spend",
+  ORDER_REFUND: "refund",
+  ADMIN_ADJUST: "deposit",
+  REFERRAL_BONUS: "deposit",
+};
+
+const BACKEND_TYPE_LABEL: Record<string, string> = {
+  DEPOSIT: "Nạp tiền",
+  ORDER_DEDUCT: "Thanh toán đơn hàng",
+  ORDER_REFUND: "Hoàn tiền đơn hàng",
+  ADMIN_ADJUST: "Điều chỉnh bởi admin",
+  REFERRAL_BONUS: "Thưởng giới thiệu",
+};
 
 // ── Config maps ──────────────────────────────────────────
 const TYPE_CONFIG: Record<TxType, { label: string; icon: React.ReactNode; color: string; bg: string; isCredit: boolean }> = {
@@ -96,7 +100,7 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
         <Box
           sx={{
             width: 28, height: 28, borderRadius: "8px",
-            background: `linear-gradient(135deg, ${color}, ${alpha(color, 0.7)})`,
+            background: color,
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: `0 2px 6px ${alpha(color, 0.3)}`,
             color: "white",
@@ -121,27 +125,68 @@ export default function HistoryPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [methodFilter, setMethodFilter] = useState<string>("all");
   const [search, setSearch]         = useState("");
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await walletApi.transactions(1, 100);
+        if (cancelled) return;
+        setTransactions(
+          res.data.map((tx) => {
+            const amount = Number.parseFloat(tx.amount);
+            const mapped = BACKEND_TYPE_MAP[tx.type] ?? (amount >= 0 ? "deposit" : "spend");
+            // ADMIN_ADJUST có thể âm → coi là chi tiêu
+            const type: TxType = mapped === "deposit" && amount < 0 ? "spend" : mapped;
+            const status: TxStatus =
+              (tx as { status?: string }).status === "PENDING" ? "pending"
+              : (tx as { status?: string }).status === "REVERSED" ? "failed"
+              : "success";
+            return {
+              id: tx.id.slice(0, 8).toUpperCase(),
+              type,
+              method: "Hệ thống",
+              description: tx.description || (tx as { note?: string }).note || BACKEND_TYPE_LABEL[tx.type] || tx.type,
+              amount,
+              status,
+              date: tx.createdAt,
+            };
+          }),
+        );
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof ApiError ? err.message : "Không tải được lịch sử giao dịch.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
-    return MOCK.filter((tx) => {
+    return transactions.filter((tx) => {
       if (!withinRange(tx.date, dateRange)) return false;
       if (typeFilter !== "all" && tx.type !== typeFilter) return false;
       if (methodFilter !== "all" && tx.method !== methodFilter) return false;
       if (search && !tx.id.toLowerCase().includes(search.toLowerCase()) && !tx.description.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [dateRange, typeFilter, methodFilter, search]);
+  }, [transactions, dateRange, typeFilter, methodFilter, search]);
 
   // Stat totals (from full dataset, not filtered)
-  const totalDeposit = MOCK.filter(t => (t.type === "deposit" || t.type === "refund") && t.status === "success").reduce((s, t) => s + t.amount, 0);
-  const totalSpend   = MOCK.filter(t => t.type === "spend"   && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalVip     = MOCK.filter(t => t.type === "vip"     && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalRefund  = MOCK.filter(t => t.type === "refund"  && t.status === "success").reduce((s, t) => s + t.amount, 0);
+  const totalDeposit = transactions.filter(t => (t.type === "deposit" || t.type === "refund") && t.status === "success").reduce((s, t) => s + t.amount, 0);
+  const totalSpend   = transactions.filter(t => t.type === "spend"   && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalVip     = transactions.filter(t => t.type === "vip"     && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalRefund  = transactions.filter(t => t.type === "refund"  && t.status === "success").reduce((s, t) => s + t.amount, 0);
 
-  const allMethods = Array.from(new Set(MOCK.map(t => t.method)));
+  const allMethods = Array.from(new Set(transactions.map(t => t.method)));
 
   return (
-    <Box sx={{ maxWidth: 960 }}>
+    <Box sx={{ width: "100%" }}>
       {/* ── Hero ── */}
       <Box
         sx={{
@@ -150,20 +195,20 @@ export default function HistoryPage() {
           borderRadius: "18px",
           border: "1px solid",
           borderColor: alpha("#0EA5E9", 0.25),
-          background: "linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #ECFEFF 100%)",
+          background: "#F0F9FF",
           px: { xs: 2.5, sm: 3 },
           py: { xs: 2.5, sm: 3 },
           mb: 3,
         }}
       >
-        <Box sx={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(14,165,233,0.18)", pointerEvents: "none" }} />
+        <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(6,182,212,0.15)", pointerEvents: "none" }} />
 
         <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ position: "relative", flexShrink: 0 }}>
-              <Box sx={{ position: "absolute", inset: -4, borderRadius: "14px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4)", filter: "blur(8px)", opacity: 0.35 }} />
-              <Box sx={{ position: "relative", width: 48, height: 48, borderRadius: "14px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4, #3B82F6)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(14,165,233,0.35)" }}>
+              <Box sx={{ position: "absolute", inset: -4, borderRadius: "14px", background: "#0EA5E9", filter: "blur(8px)", opacity: 0.35 }} />
+              <Box sx={{ position: "relative", width: 48, height: 48, borderRadius: "14px", background: "#0EA5E9", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(14,165,233,0.35)" }}>
                 <History size={24} color="white" />
               </Box>
             </Box>
@@ -173,7 +218,7 @@ export default function HistoryPage() {
               </Typography>
               <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
                 Tổng{" "}
-                <Box component="span" sx={{ fontWeight: 700, color: "#0284C7" }}>{MOCK.length}</Box>
+                <Box component="span" sx={{ fontWeight: 700, color: "#0284C7" }}>{transactions.length}</Box>
                 {" "}giao dịch · trang 1/1
               </Typography>
             </Box>
@@ -276,7 +321,7 @@ export default function HistoryPage() {
                   cursor: "pointer",
                   fontSize: "11px", fontWeight: 600,
                   transition: "all 150ms ease",
-                  background: active ? "linear-gradient(135deg, #0EA5E9, #06B6D4)" : "transparent",
+                  background: active ? "#0EA5E9" : "transparent",
                   color: active ? "white" : "text.secondary",
                   boxShadow: active ? "0 1px 6px rgba(14,165,233,0.3)" : "none",
                   "&:hover": { color: active ? "white" : "#0284C7" },
@@ -393,7 +438,16 @@ export default function HistoryPage() {
         </Box>
       </Box>
 
+      {/* ── Loading / error ── */}
+      {loading && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
+      {loadError && <Alert severity="error" sx={{ mb: 2 }}>{loadError}</Alert>}
+
       {/* ── Transaction list ── */}
+      {!loading && (
       <Box
         sx={{
           borderRadius: "16px",
@@ -410,7 +464,7 @@ export default function HistoryPage() {
               sx={{
                 width: 80, height: 80,
                 borderRadius: "24px",
-                background: "linear-gradient(135deg, #EFF6FF, #E0F2FE)",
+                background: "#EFF6FF",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
@@ -432,7 +486,7 @@ export default function HistoryPage() {
                 px: 3, py: 1.125,
                 borderRadius: "99px",
                 border: "none",
-                background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
+                background: "#0EA5E9",
                 color: "white",
                 fontSize: "13px", fontWeight: 700,
                 textDecoration: "none",
@@ -613,6 +667,7 @@ export default function HistoryPage() {
           </Box>
         )}
       </Box>
+      )}
 
       {/* Footer count */}
       {filtered.length > 0 && (
@@ -620,7 +675,7 @@ export default function HistoryPage() {
           <Typography sx={{ fontSize: "12px", color: "text.disabled" }}>
             Hiển thị{" "}
             <Box component="span" sx={{ fontWeight: 700, color: "text.secondary" }}>{filtered.length}</Box>
-            {" "}/ {MOCK.length} giao dịch
+            {" "}/ {transactions.length} giao dịch
           </Typography>
         </Box>
       )}

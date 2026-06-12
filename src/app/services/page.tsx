@@ -1,26 +1,44 @@
 "use client";
 
-import { Box, Typography, InputBase, alpha, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Box, Typography, InputBase, alpha, CircularProgress, Alert } from "@mui/material";
 import { Search, LayoutGrid } from "lucide-react";
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PlatformCategory from "@/components/services/PlatformCategory";
-import { servicesData, platformColors } from "@/data/services";
-import type { PlatformId } from "@/types";
+import { platformColors } from "@/data/services";
+import { toUiService, useCatalog } from "@/hooks/useCatalog";
+import type { PlatformCategory as PlatformCategoryType, PlatformId } from "@/types";
 
 const ALL = "all";
 
 function ServicesContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
-  const [activePlatform, setActivePlatform] = useState<PlatformId | "all">(ALL);
+  // null = chưa chọn tay → lấy theo query param nếu hợp lệ
+  const [userPlatform, setUserPlatform] = useState<PlatformId | "all" | null>(null);
+  const { platforms, loading, error, servicesByPlatform } = useCatalog();
 
-  useEffect(() => {
-    const platform = searchParams.get("platform");
-    if (platform && servicesData.some((s) => s.id === platform)) {
-      setActivePlatform(platform as PlatformId);
-    }
-  }, [searchParams]);
+  // Dựng dữ liệu hiển thị từ catalog backend: mỗi platform (category cha) + services của nó
+  const servicesData: PlatformCategoryType[] = useMemo(
+    () =>
+      platforms
+        .filter((p) => platformColors[p.slug])
+        .map((p) => ({
+          id: p.slug as PlatformId,
+          label: p.label,
+          color: "blue",
+          services: servicesByPlatform(p.slug).map(toUiService),
+        }))
+        .filter((p) => p.services.length > 0),
+    [platforms, servicesByPlatform],
+  );
+
+  const paramPlatform = searchParams.get("platform");
+  const activePlatform: PlatformId | "all" =
+    userPlatform ??
+    (paramPlatform && servicesData.some((s) => s.id === paramPlatform)
+      ? (paramPlatform as PlatformId)
+      : ALL);
 
   const totalServices = servicesData.reduce((sum, p) => sum + p.services.length, 0);
 
@@ -35,12 +53,12 @@ function ServicesContent() {
         ),
       }))
       .filter((cat) => cat.services.length > 0);
-  }, [search, activePlatform]);
+  }, [servicesData, search, activePlatform]);
 
   const filteredTotal = filtered.reduce((sum, p) => sum + p.services.length, 0);
 
   return (
-    <Box sx={{ maxWidth: 900 }}>
+    <Box sx={{ width: "100%" }}>
       {/* Page header */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
@@ -61,6 +79,13 @@ function ServicesContent() {
           Tất cả dịch vụ tăng tương tác mạng xã hội
         </Typography>
       </Box>
+
+      {loading && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Search + filter bar */}
       <Box
@@ -129,7 +154,7 @@ function ServicesContent() {
           {/* All button */}
           <Box
             component="button"
-            onClick={() => setActivePlatform(ALL)}
+            onClick={() => setUserPlatform(ALL)}
             sx={{
               px: 1.5, py: 0.625,
               borderRadius: "8px",
@@ -153,7 +178,7 @@ function ServicesContent() {
               <Box
                 key={cat.id}
                 component="button"
-                onClick={() => setActivePlatform(cat.id as PlatformId)}
+                onClick={() => setUserPlatform(cat.id as PlatformId)}
                 sx={{
                   px: 1.25, py: 0.625,
                   borderRadius: "8px",
@@ -197,7 +222,7 @@ function ServicesContent() {
               display: "inline-flex", alignItems: "center", gap: 1,
               px: 2.5, py: 1,
               borderRadius: "99px",
-              background: "linear-gradient(135deg, #F0F9FF, #ECFEFF, #EFF6FF)",
+              background: "#F0F9FF",
               border: "1px solid",
               borderColor: alpha("#0EA5E9", 0.2),
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
@@ -207,10 +232,7 @@ function ServicesContent() {
             <Typography
               sx={{
                 fontSize: "14px", fontWeight: 800,
-                background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                color: "#0EA5E9",
                 fontVariantNumeric: "tabular-nums",
               }}
             >

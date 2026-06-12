@@ -19,14 +19,20 @@ export type ServiceSpeed = "fast" | "medium" | "slow";
 export type PlatformId = "facebook" | "tiktok" | "instagram" | "youtube" | "twitter" | "google" | "telegram";
 
 export interface Service {
+  /** publicId từ backend — dùng làm `service` khi đặt đơn */
   id: number;
+  /** UUID backend */
+  uuid?: string;
   name: string;
   min: number;
   max: number;
-  price: number; // ₫ per 1
+  price: number; // ₫ per 1 (backend rate / 1000)
   speed: ServiceSpeed;
   durationMin: number; // estimated minutes
   status: ServiceStatus;
+  refill?: boolean;
+  cancel?: boolean;
+  categorySlug?: string;
 }
 
 export interface PlatformCategory {

@@ -10,9 +10,16 @@ import {
   Avatar,
   alpha,
   Tooltip,
-  Chip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  Divider,
 } from "@mui/material";
-import { PanelLeftClose, PanelLeftOpen, Search, Sun, ChevronDown } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Search, Sun, ChevronDown, LogOut, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatVND } from "@/lib/format";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "./AppSidebar";
 
 interface AppHeaderProps {
@@ -36,6 +43,23 @@ function VNFlag() {
 
 export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapsed }: AppHeaderProps) {
   const sidebarW = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
+  const { user, wallet, logout } = useAuth();
+  const router = useRouter();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const displayName = user?.fullName || user?.username || "";
+  const initials = displayName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  async function handleLogout() {
+    setMenuAnchor(null);
+    await logout();
+    router.replace("/login");
+  }
 
   return (
     <AppBar
@@ -196,6 +220,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
           {/* Account button */}
           <Box
             component="button"
+            onClick={(e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget)}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -217,7 +242,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 sx={{
                   p: "2px",
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #38BDF8, #22D3EE, #3B82F6)",
+                  background: "#38BDF8",
                   boxShadow: "0 2px 8px rgba(14,165,233,0.3)",
                 }}
               >
@@ -231,7 +256,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                     border: "2px solid white",
                   }}
                 >
-                  JK
+                  {initials || "?"}
                 </Avatar>
               </Box>
               {/* Online indicator */}
@@ -263,7 +288,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                   textOverflow: "ellipsis",
                 }}
               >
-                John Kenvin Mitnick
+                {displayName}
               </Typography>
               <Typography
                 sx={{
@@ -274,7 +299,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                0 ₫
+                {wallet ? formatVND(wallet.balance) : "—"}
               </Typography>
             </Box>
 
@@ -283,6 +308,29 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
               <ChevronDown size={16} color="#94A3B8" />
             </Box>
           </Box>
+
+          {/* Account menu */}
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={() => setMenuAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>{displayName}</Typography>
+              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{user?.email}</Typography>
+            </Box>
+            <Divider />
+            <MenuItem onClick={() => { setMenuAnchor(null); router.push("/profile"); }}>
+              <ListItemIcon><UserIcon size={16} /></ListItemIcon>
+              Hồ sơ
+            </MenuItem>
+            <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
+              <ListItemIcon><LogOut size={16} color="#EF4444" /></ListItemIcon>
+              Đăng xuất
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>
