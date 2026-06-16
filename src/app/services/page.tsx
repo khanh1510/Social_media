@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography, InputBase, alpha, CircularProgress, Alert } from "@mui/material";
-import { Search, LayoutGrid } from "lucide-react";
+import { Search, LayoutGrid, Layers, Zap, Shield } from "lucide-react";
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PlatformCategory from "@/components/services/PlatformCategory";
@@ -78,6 +78,57 @@ function ServicesContent() {
         <Typography sx={{ fontSize: "13px", color: "text.secondary", ml: "52px" }}>
           Tất cả dịch vụ tăng tương tác mạng xã hội
         </Typography>
+      </Box>
+
+      {/* Stat cards */}
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, mb: 3 }}>
+        {[
+          {
+            icon: <Layers size={22} color="#2563EB" />,
+            iconBg: alpha("#2563EB", 0.1),
+            value: loading ? "..." : String(totalServices),
+            label: "Tổng dịch vụ",
+            border: alpha("#2563EB", 0.15),
+          },
+          {
+            icon: <Zap size={22} color="#0EA5E9" />,
+            iconBg: alpha("#0EA5E9", 0.1),
+            value: "24/7",
+            label: "Auto",
+            border: alpha("#0EA5E9", 0.15),
+          },
+          {
+            icon: <Shield size={22} color="#6366F1" />,
+            iconBg: alpha("#6366F1", 0.1),
+            value: "100%",
+            label: "Safe",
+            border: alpha("#6366F1", 0.15),
+          },
+        ].map((s) => (
+          <Box
+            key={s.label}
+            sx={{
+              display: "flex", alignItems: "center", gap: 2,
+              px: 2.5, py: 2,
+              borderRadius: "14px",
+              border: "1px solid", borderColor: s.border,
+              bgcolor: "background.paper",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            }}
+          >
+            <Box sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {s.icon}
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: "22px", fontWeight: 800, color: "text.primary", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                {s.value}
+              </Typography>
+              <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
+                {s.label}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
       </Box>
 
       {loading && (

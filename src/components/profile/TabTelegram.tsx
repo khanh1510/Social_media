@@ -67,7 +67,7 @@ export default function TabTelegram() {
                 mt: 0.125,
               }}
             >
-              <Typography sx={{ fontSize: "10px", fontWeight: 800, color: "white" }}>{i + 1}</Typography>
+              <Typography sx={{ fontSize: "10px", fontWeight: 700, color: "white" }}>{i + 1}</Typography>
             </Box>
             <Typography sx={{ fontSize: "12px", color: "text.secondary", lineHeight: 1.5 }}>{step}</Typography>
           </Box>

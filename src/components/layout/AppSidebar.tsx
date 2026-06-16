@@ -12,7 +12,7 @@ import {
   Tooltip,
   alpha,
 } from "@mui/material";
-import { LayoutDashboard, LayoutGrid, User, CreditCard, History, Webhook, Headphones, ChevronRight } from "lucide-react";
+import { LayoutDashboard, LayoutGrid, Crown, User, CreditCard, History, Webhook, Headphones, ChevronRight } from "lucide-react";
 import {
   siFacebook, siTiktok, siInstagram, siYoutube, siX, siGoogle, siTelegram,
 } from "simple-icons";
@@ -41,10 +41,10 @@ const platformLogos: Record<string, React.ReactNode> = {
   telegram: <SiIcon icon={siTelegram} color={`#${siTelegram.hex}`} />,
 };
 
-// VIP và Website Con tạm ẩn — backend chưa có module tương ứng
 const mainNavItems: { id: string; label: string; icon: React.ElementType; href: string; activeGlow?: boolean; badge?: string }[] = [
   { id: "dashboard", label: "Tổng Quan", icon: LayoutDashboard, href: "/dashboard", activeGlow: true },
   { id: "services", label: "Bảng Giá Dịch Vụ", icon: LayoutGrid, href: "/services" },
+  { id: "vip", label: "Gói VIP", icon: Crown, href: "/vip", badge: "NEW" },
   { id: "profile", label: "Hồ Sơ", icon: User, href: "/profile" },
   { id: "deposit", label: "Nạp Tiền", icon: CreditCard, href: "/deposit" },
   { id: "history", label: "Lịch Sử Giao Dịch", icon: History, href: "/history" },

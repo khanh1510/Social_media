@@ -80,7 +80,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
             transition: "border-color 180ms ease",
           }}
         >
-          <Typography sx={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: alpha(accentColor, 0.5), lineHeight: 1 }}>
+          <Typography sx={{ fontSize: "8px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: alpha(accentColor, 0.5), lineHeight: 1 }}>
             SVR
           </Typography>
           <Typography sx={{ fontSize: { xs: "12px", sm: "13px" }, fontWeight: 800, color: accentColor, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>

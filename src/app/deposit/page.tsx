@@ -2,7 +2,6 @@
 
 import { Box, Typography, alpha, Alert, CircularProgress, InputBase } from "@mui/material";
 import { Wallet, PlusCircle, History, CircleDollarSign, CreditCard, MessageSquare, Check, Mail, Info, Inbox, ExternalLink } from "lucide-react";
-import { siTelegram } from "simple-icons";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { paymentsApi, ApiError } from "@/lib/api";
@@ -27,16 +26,24 @@ const GATEWAY_DISPLAY: Record<string, { name: string; subtitle: string; color: s
 };
 const ALLOWED_GATEWAYS = Object.keys(GATEWAY_DISPLAY);
 
-// Logo dạng chữ cho gateway
+const GATEWAY_LOGOS: Record<string, string> = {
+  vnpay: "/logos/vnpay.jpg",
+  momo: "/logos/momo.png",
+};
+
 function BankLogo({ gateway }: { gateway: Gateway }) {
   if (gateway.isAdmin) {
     return <MessageSquare size={20} color={gateway.color} />;
+  }
+  const src = GATEWAY_LOGOS[gateway.id];
+  if (src) {
+    return <img src={src} alt={gateway.name} style={{ width: 48, height: 28, objectFit: "contain" }} />;
   }
   return (
     <Typography
       sx={{
         fontSize: "11px",
-        fontWeight: 900,
+        fontWeight: 800,
         color: gateway.color,
         letterSpacing: "-0.02em",
         lineHeight: 1,
@@ -52,7 +59,6 @@ const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 // Contact channels shown when Admin is selected
 const CONTACT_CHANNELS = [
   { icon: <Mail size={18} color="white" />, label: "Email", value: "support@socialmedia.vn", color: "#2563EB" },
-  { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d={siTelegram.path} /></svg>, label: "Telegram", value: "@SocialMediaVN", color: "#0284C7" },
 ];
 
 const STATUS_CONFIG = {
@@ -205,7 +211,7 @@ export default function DepositPage() {
           >
             <CircleDollarSign size={20} color="#0EA5E9" style={{ flexShrink: 0 }} />
             <Box>
-              <Typography sx={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.disabled" }}>
+              <Typography sx={{ fontSize: "9px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.disabled" }}>
                 Số dư hiện tại
               </Typography>
               <Typography sx={{ fontSize: { xs: "15px", sm: "17px" }, fontWeight: 800, color: "#0284C7", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
