@@ -1,7 +1,7 @@
 "use client";
 
-import { Box, Typography, alpha } from "@mui/material";
-import { Zap, Clock } from "lucide-react";
+import { Box, Typography, alpha, Tooltip } from "@mui/material";
+import { Zap, Clock, RefreshCw, XCircle, Droplets } from "lucide-react";
 import type { Service } from "@/types";
 
 interface ServiceItemProps {
@@ -22,9 +22,9 @@ function formatRange(min: number, max: number) {
 }
 
 const speedConfig = {
-  fast: { label: "Nhanh", bg: "#DCFCE7", text: "#16A34A", border: "#BBF7D0" },
-  medium: { label: "Vừa", bg: "#FEF9C3", text: "#CA8A04", border: "#FEF08A" },
-  slow: { label: "Chậm", bg: "#FEF3C7", text: "#D97706", border: "#FDE68A" },
+  fast:   { label: "Nhanh", bg: "#DCFCE7", text: "#16A34A", border: "#BBF7D0" },
+  medium: { label: "Vừa",   bg: "#FEF9C3", text: "#CA8A04", border: "#FEF08A" },
+  slow:   { label: "Chậm",  bg: "#FEF3C7", text: "#D97706", border: "#FDE68A" },
 };
 
 const statusConfig = {
@@ -91,35 +91,48 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
         {/* Content */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* Name row */}
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}>
-            <Typography
-              className="service-name"
-              sx={{
-                fontSize: { xs: "12px", sm: "13px" },
-                fontWeight: 600,
-                lineHeight: 1.4,
-                color: "text.primary",
-                transition: "color 180ms ease",
-                flex: 1,
-              }}
-            >
-              {service.name}
-            </Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.75 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                className="service-name"
+                sx={{
+                  fontSize: { xs: "12px", sm: "13px" },
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                  color: "text.primary",
+                  transition: "color 180ms ease",
+                }}
+              >
+                {service.name}
+              </Typography>
+              {/* Description — hiển thị nếu có */}
+              {service.description && (
+                <Typography
+                  sx={{
+                    fontSize: "11px",
+                    color: "text.disabled",
+                    lineHeight: 1.4,
+                    mt: 0.25,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {service.description}
+                </Typography>
+              )}
+            </Box>
             {statusBadge && (
               <Box
                 component="span"
                 sx={{
                   flexShrink: 0,
                   mt: 0.25,
-                  px: 1,
-                  height: 18,
-                  borderRadius: "99px",
-                  bgcolor: statusBadge.bg,
-                  color: statusBadge.text,
-                  fontSize: "9px",
-                  fontWeight: 700,
-                  display: "inline-flex",
-                  alignItems: "center",
+                  px: 1, height: 18, borderRadius: "99px",
+                  bgcolor: statusBadge.bg, color: statusBadge.text,
+                  fontSize: "9px", fontWeight: 700,
+                  display: "inline-flex", alignItems: "center",
                 }}
               >
                 {statusBadge.label}
@@ -173,6 +186,69 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                 <Clock size={12} />
                 {formatDuration(service.durationMin)}
               </Box>
+
+              {/* Refill badge */}
+              {service.refill && (
+                <Tooltip title="Hỗ trợ bảo hành (refill)" placement="top" arrow>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex", alignItems: "center", gap: 0.375,
+                      px: 0.875, py: 0.25, borderRadius: "6px",
+                      bgcolor: alpha("#059669", 0.08),
+                      color: "#059669",
+                      border: `1px solid ${alpha("#059669", 0.2)}`,
+                      fontSize: "10px", fontWeight: 700,
+                      cursor: "default",
+                    }}
+                  >
+                    <RefreshCw size={9} />
+                    BH
+                  </Box>
+                </Tooltip>
+              )}
+
+              {/* Cancel badge */}
+              {service.cancel && (
+                <Tooltip title="Hỗ trợ hủy đơn" placement="top" arrow>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex", alignItems: "center", gap: 0.375,
+                      px: 0.875, py: 0.25, borderRadius: "6px",
+                      bgcolor: alpha("#64748B", 0.08),
+                      color: "#64748B",
+                      border: `1px solid ${alpha("#64748B", 0.2)}`,
+                      fontSize: "10px", fontWeight: 700,
+                      cursor: "default",
+                    }}
+                  >
+                    <XCircle size={9} />
+                    Hủy
+                  </Box>
+                </Tooltip>
+              )}
+
+              {/* Dripfeed badge */}
+              {service.dripfeed && (
+                <Tooltip title="Hỗ trợ nhỏ giọt (dripfeed)" placement="top" arrow>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex", alignItems: "center", gap: 0.375,
+                      px: 0.875, py: 0.25, borderRadius: "6px",
+                      bgcolor: alpha("#0284C7", 0.08),
+                      color: "#0284C7",
+                      border: `1px solid ${alpha("#0284C7", 0.2)}`,
+                      fontSize: "10px", fontWeight: 700,
+                      cursor: "default",
+                    }}
+                  >
+                    <Droplets size={9} />
+                    NG
+                  </Box>
+                </Tooltip>
+              )}
             </Box>
 
             {/* Price */}

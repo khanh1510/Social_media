@@ -120,7 +120,7 @@ export default function VipPage() {
                   key={b.label}
                   sx={{
                     display: "inline-flex", alignItems: "center", gap: 0.75,
-                    px: 1.25, py: 0.5,
+                    px: 2.5, py: 1.25,
                     borderRadius: "8px",
                     bgcolor: alpha("#FFFFFF", 0.7),
                     border: `1px solid ${alpha("#0EA5E9", 0.2)}`,
@@ -280,7 +280,7 @@ export default function VipPage() {
             component="button"
             onClick={() => setActiveTab("available")}
             sx={{
-              mt: 1, px: 2.5, py: 1,
+              mt: 1, px: 2.5, py: 1.25,
               borderRadius: "10px", border: "none",
               background: "linear-gradient(135deg, #0EA5E9, #06B6D4)",
               color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer",

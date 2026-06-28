@@ -64,7 +64,7 @@ export default function LoginPage() {
       <Paper elevation={0} sx={{ p: 4, width: "100%", maxWidth: 420, borderRadius: "16px", border: "1px solid", borderColor: "divider" }}>
         <Typography sx={{ fontSize: 24, fontWeight: 800, mb: 0.5 }}>Đăng nhập</Typography>
         <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 3 }}>
-          SocialMedia.vn — Bảng điều khiển dịch vụ mạng xã hội
+          SignalGit — Bảng điều khiển dịch vụ mạng xã hội
         </Typography>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

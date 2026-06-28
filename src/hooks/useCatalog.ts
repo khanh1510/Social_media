@@ -43,6 +43,7 @@ export function toUiService(s: ApiService): Service {
     id: s.publicId,
     uuid: s.id,
     name: s.name,
+    description: s.description,
     min: s.min,
     max: s.max,
     price: Number.parseFloat(s.rate) / 1000,
@@ -51,7 +52,9 @@ export function toUiService(s: ApiService): Service {
     status: "active",
     refill: s.refill,
     cancel: s.cancel,
+    dripfeed: s.dripfeed,
     categorySlug: s.category.slug,
+    averageTime: s.averageTime,
   };
 }
 

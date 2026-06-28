@@ -304,13 +304,13 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
         <Box
           component="button"
           sx={{
-            px: { xs: 1.5, sm: 2 },
-            py: 0.875,
-            borderRadius: "10px",
+            px: 2.5,
+            py: 1.25,
+            borderRadius: "8px",
             border: "none",
             background: "#0EA5E9",
             color: "white",
-            fontSize: "12px",
+            fontSize: "13px",
             fontWeight: 700,
             cursor: "pointer",
             transition: "all 150ms ease",

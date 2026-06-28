@@ -41,18 +41,27 @@ export interface Wallet {
 
 export type TransactionType =
   | "DEPOSIT"
-  | "ORDER_PAYMENT"
-  | "REFUND"
-  | "ADJUSTMENT"
+  | "ORDER_DEDUCT"
+  | "ORDER_REFUND"
+  | "ADMIN_ADJUST"
+  | "REFERRAL_BONUS"
   | "WITHDRAWAL";
+
+export type TransactionStatus = "COMPLETED" | "PENDING" | "FAILED" | "REVERSED";
 
 export interface WalletTransaction {
   id: string;
+  walletId?: string;
   type: string;
+  status: TransactionStatus;
   amount: string;
   balanceBefore?: string;
   balanceAfter?: string;
+  refType?: string | null;
+  refId?: string | null;
+  note?: string | null;
   description?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -146,16 +155,19 @@ export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "EXPIRED" | "REFUNDE
 
 export interface PaymentIntent {
   id: string;
+  userId?: string;
   gateway: string;
+  externalId?: string | null;
   amount: string;
   currency: string;
   status: PaymentStatus;
   redirectUrl?: string | null;
   clientSecret?: string | null;
   qrCode?: string | null;
-  createdAt?: string;
+  payerInfo?: Record<string, unknown> | null;
+  paidAt?: string | null;
+  createdAt: string;
   expiresAt?: string | null;
-  [key: string]: unknown;
 }
 
 export interface ApiNotification {
@@ -177,4 +189,29 @@ export interface ApiKey {
   createdAt: string;
   lastUsedAt?: string | null;
   expiresAt?: string | null;
+}
+
+export type TicketStatus = "OPEN" | "ANSWERED" | "PENDING_USER" | "CLOSED";
+export type TicketPriority = "low" | "normal" | "high";
+
+export interface TicketMessage {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  isStaff: boolean;
+  body: string;
+  createdAt: string;
+}
+
+export interface Ticket {
+  id: string;
+  userId: string;
+  subject: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  orderId?: string | null;
+  closedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  messages?: TicketMessage[];
 }

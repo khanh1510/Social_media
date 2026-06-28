@@ -55,31 +55,58 @@ const mainNavItems: { id: string; label: string; icon: React.ElementType; href: 
 const serviceItems = [
   {
     id: "facebook", label: "Facebook",
-    subs: ["Like", "Follow", "Comment", "Share", "View", "Livestream"],
+    subs: [
+      { slug: "facebook-page-likes", label: "Page Likes" },
+      { slug: "facebook-followers", label: "Followers" },
+      { slug: "facebook-post-likes", label: "Post Likes" },
+      { slug: "facebook-comments", label: "Comments" },
+      { slug: "facebook-shares", label: "Shares" },
+      { slug: "facebook-video-views", label: "Video Views" },
+    ],
   },
   {
     id: "tiktok", label: "TikTok",
-    subs: ["Like", "Follow", "Comment", "Share", "View", "Livestream"],
+    subs: [
+      { slug: "tiktok-followers", label: "Followers" },
+      { slug: "tiktok-likes", label: "Likes" },
+      { slug: "tiktok-views", label: "Views" },
+      { slug: "tiktok-comments", label: "Comments" },
+      { slug: "tiktok-shares", label: "Shares" },
+    ],
   },
   {
     id: "instagram", label: "Instagram",
-    subs: ["Like", "Follow", "Comment", "View", "Story View"],
+    subs: [
+      { slug: "instagram-followers", label: "Followers" },
+      { slug: "instagram-likes", label: "Likes" },
+      { slug: "instagram-views", label: "Views" },
+      { slug: "instagram-reels-views", label: "Reels Views" },
+      { slug: "instagram-story-views", label: "Story Views" },
+    ],
   },
   {
     id: "youtube", label: "YouTube",
-    subs: ["View", "Subscribe", "Like", "Comment", "Livestream"],
+    subs: [
+      { slug: "youtube-views", label: "Views" },
+      { slug: "youtube-shorts-views", label: "Shorts Views" },
+      { slug: "youtube-subscribers", label: "Subscribers" },
+      { slug: "youtube-likes", label: "Likes" },
+    ],
   },
   {
     id: "twitter", label: "Twitter/X",
-    subs: ["Like", "Follow", "Comment", "Retweet", "View"],
-  },
-  {
-    id: "google", label: "Google",
-    subs: ["Maps Save", "Review"],
+    subs: [
+      { slug: "twitter-followers", label: "Followers" },
+      { slug: "twitter-likes", label: "Likes" },
+      { slug: "twitter-views", label: "Views" },
+    ],
   },
   {
     id: "telegram", label: "Telegram",
-    subs: ["Member", "View"],
+    subs: [
+      { slug: "telegram-members", label: "Members" },
+      { slug: "telegram-post-views", label: "Post Views" },
+    ],
   },
 ];
 
@@ -156,7 +183,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
               boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
             }}
           >
-            <Typography sx={{ color: "white", fontWeight: 800, fontSize: "12px" }}>SM</Typography>
+            <Typography sx={{ color: "white", fontWeight: 800, fontSize: "12px" }}>SG</Typography>
           </Box>
           <Box
             sx={{
@@ -169,10 +196,10 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
             }}
           >
             <Typography sx={{ fontWeight: 700, fontSize: "14px", color: "text.primary", lineHeight: 1.3 }}>
-              SocialMedia.vn
+              SignalGit
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.3 }}>
-              socialmedia.vn
+              Bảng điều khiển
             </Typography>
           </Box>
         </Box>
@@ -379,9 +406,9 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                     <Box sx={{ pl: 2, pt: 0.5, pb: 0.5 }}>
                       {service.subs.map((sub) => (
                         <ListItemButton
-                          key={sub}
+                          key={sub.slug}
                           component={Link}
-                          href={`/seeding?platform=${service.id}&serviceType=${encodeURIComponent(sub)}&tab=order`}
+                          href={`/seeding?platform=${service.id}&serviceType=${encodeURIComponent(sub.slug)}&tab=order`}
                           onClick={onClose}
                           sx={{
                             borderRadius: "8px", py: 0.75, px: 1.5,
@@ -389,7 +416,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                           }}
                         >
                           <Typography sx={{ fontSize: "12px", fontWeight: 500, color: alpha("#0F172A", 0.6) }}>
-                            {sub}
+                            {sub.label}
                           </Typography>
                         </ListItemButton>
                       ))}

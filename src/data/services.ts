@@ -1,4 +1,12 @@
 // Chỉ còn bảng màu theo platform — danh sách dịch vụ lấy từ backend qua useCatalog().
+export const FALLBACK_PLATFORM_COLOR = {
+  border: "#E2E8F0",
+  bg: "#F8FAFC",
+  text: "#475569",
+  badge: "#F1F5F9",
+  glow: "rgba(71,85,105,0.1)",
+};
+
 export const platformColors: Record<string, { border: string; bg: string; text: string; badge: string; glow: string }> = {
   facebook: {
     border: "#BFDBFE",

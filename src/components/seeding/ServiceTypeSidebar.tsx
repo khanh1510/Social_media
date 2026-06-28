@@ -78,10 +78,8 @@ export default function ServiceTypeSidebar({ platforms, activePlatform, activeCa
   const config = platformConfig[activePlatform] ?? platformConfig.facebook;
   const activeCatalog = platforms.find((p) => p.slug === activePlatform);
   const serviceTypes = (activeCatalog?.children ?? []).map((c) => ({ key: c.slug, label: c.label }));
-  // Chỉ hiện platform có trong catalog backend và có config màu/logo
-  const platformOrder = platforms
-    .map((p) => p.slug)
-    .filter((slug): slug is PlatformId => slug in platformConfig);
+  // Tất cả platform từ backend, ưu tiên các platform có config màu/logo, còn lại dùng fallback
+  const platformOrder = platforms.map((p) => p.slug);
 
   return (
     <Box
@@ -109,14 +107,14 @@ export default function ServiceTypeSidebar({ platforms, activePlatform, activeCa
         </Typography>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
           {platformOrder.map((pid) => {
-            const pcfg = platformConfig[pid];
+            const pcfg = platformConfig[pid as PlatformId] ?? { label: pid, color: "#475569", bg: "#F1F5F9", logo: null };
             const isActive = pid === activePlatform;
             const firstType = platforms.find((p) => p.slug === pid)?.children[0]?.slug ?? "";
             return (
               <Box
                 key={pid}
                 component={Link}
-                href={`/seeding?platform=${pid}&serviceType=${encodeURIComponent(firstType)}&tab=order`}
+                href={`/seeding?platform=${encodeURIComponent(pid)}&serviceType=${encodeURIComponent(firstType)}&tab=order`}
                 sx={{
                   display: "flex",
                   alignItems: "center",

@@ -56,6 +56,7 @@ export default function CreateOrderForm({ platform, services }: Props) {
         service: activeService.id,
         link: link.trim(),
         quantity: clampedQty,
+        ...(note.trim() ? { note: note.trim() } : {}),
         idempotencyKey: crypto.randomUUID(),
       });
       setCreatedOrderNumber(order.orderNumber);

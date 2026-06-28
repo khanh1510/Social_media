@@ -5,7 +5,7 @@ import { Search, LayoutGrid, Layers, Zap, Shield } from "lucide-react";
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PlatformCategory from "@/components/services/PlatformCategory";
-import { platformColors } from "@/data/services";
+import { platformColors, FALLBACK_PLATFORM_COLOR } from "@/data/services";
 import { toUiService, useCatalog } from "@/hooks/useCatalog";
 import type { PlatformCategory as PlatformCategoryType, PlatformId } from "@/types";
 
@@ -22,7 +22,6 @@ function ServicesContent() {
   const servicesData: PlatformCategoryType[] = useMemo(
     () =>
       platforms
-        .filter((p) => platformColors[p.slug])
         .map((p) => ({
           id: p.slug as PlatformId,
           label: p.label,
@@ -223,7 +222,7 @@ function ServicesContent() {
           </Box>
 
           {servicesData.map((cat) => {
-            const c = platformColors[cat.id];
+            const c = platformColors[cat.id] ?? FALLBACK_PLATFORM_COLOR;
             const isActive = activePlatform === cat.id;
             return (
               <Box
@@ -231,7 +230,7 @@ function ServicesContent() {
                 component="button"
                 onClick={() => setUserPlatform(cat.id as PlatformId)}
                 sx={{
-                  px: 1.25, py: 0.625,
+                  px: 2, py: 1,
                   borderRadius: "8px",
                   border: "1px solid",
                   borderColor: isActive ? c.text : "divider",

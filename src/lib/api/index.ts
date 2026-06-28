@@ -92,7 +92,7 @@ export const ordersApi = {
     return apiFetch<Paginated<ApiOrder>>(`/orders?${qs.toString()}`);
   },
   get: (id: string) => apiFetch<ApiOrder>(`/orders/${id}`),
-  create: (data: { service: number; link: string; quantity: number; idempotencyKey?: string }) =>
+  create: (data: { service: number; link: string; quantity: number; note?: string; idempotencyKey?: string }) =>
     apiFetch<ApiOrder>("/orders", { method: "POST", body: data }),
   cancel: (id: string) => apiFetch<ApiOrder>(`/orders/${id}/cancel`, { method: "POST" }),
   refill: (id: string) => apiFetch(`/orders/${id}/refill`, { method: "POST" }),
@@ -114,6 +114,19 @@ export const usersApi = {
   createApiKey: (name: string) =>
     apiFetch<ApiKey>("/users/me/api-keys", { method: "POST", body: { name } }),
   deleteApiKey: (id: string) => apiFetch(`/users/me/api-keys/${id}`, { method: "DELETE" }),
+};
+
+export const ticketsApi = {
+  list: (page = 1, limit = 20) =>
+    apiFetch<import("./types").Paginated<import("./types").Ticket>>(`/tickets?page=${page}&limit=${limit}`),
+  get: (id: string) =>
+    apiFetch<import("./types").Ticket>(`/tickets/${id}`),
+  create: (data: { subject: string; body: string; priority?: "low" | "normal" | "high"; orderId?: string }) =>
+    apiFetch<import("./types").Ticket>("/tickets", { method: "POST", body: data }),
+  reply: (id: string, body: string) =>
+    apiFetch<import("./types").Ticket>(`/tickets/${id}/messages`, { method: "POST", body: { body } }),
+  close: (id: string) =>
+    apiFetch<{ success: boolean }>(`/tickets/${id}/close`, { method: "POST" }),
 };
 
 export const notificationsApi = {

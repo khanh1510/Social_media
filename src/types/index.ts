@@ -24,6 +24,7 @@ export interface Service {
   /** UUID backend */
   uuid?: string;
   name: string;
+  description?: string | null;
   min: number;
   max: number;
   price: number; // ₫ per 1 (backend rate / 1000)
@@ -32,7 +33,10 @@ export interface Service {
   status: ServiceStatus;
   refill?: boolean;
   cancel?: boolean;
+  dripfeed?: boolean;
   categorySlug?: string;
+  /** averageTime gốc từ backend, vd "10-30 phút", "1-6 giờ" */
+  averageTime?: string | null;
 }
 
 export interface PlatformCategory {
@@ -95,4 +99,6 @@ export interface Notification {
   timeAgo: string;
   title: string;
   description: string;
+  isRead: boolean;
+  notifType?: string;
 }

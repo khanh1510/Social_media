@@ -1,169 +1,735 @@
 "use client";
 
-import { Box, CircularProgress, Typography, alpha } from "@mui/material";
-import { Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import { PlusCircle, ClipboardList } from "lucide-react";
-import ServiceTypeSidebar from "@/components/seeding/ServiceTypeSidebar";
-import CreateOrderForm from "@/components/seeding/CreateOrderForm";
-import OrderHistory from "@/components/seeding/OrderHistory";
-import { platformColors } from "@/data/services";
+import { Box, Checkbox, CircularProgress, InputBase, MenuItem, Select, Tooltip, Typography, alpha } from "@mui/material";
+import { ShoppingCart, History, RefreshCw, XCircle, RotateCcw, ExternalLink, CheckCircle2, Shield, Settings2, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Suspense, useMemo, useState, useCallback, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  siFacebook, siTiktok, siInstagram, siYoutube, siX, siTelegram,
+} from "simple-icons";
 import { toUiService, useCatalog } from "@/hooks/useCatalog";
-import type { PlatformId } from "@/types";
+import { ordersApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import type { ApiOrder, OrderStatus } from "@/lib/api/types";
+import type { Service } from "@/types";
+import { formatDate, formatVND } from "@/lib/format";
 
-const VALID_PLATFORMS: PlatformId[] = ["facebook", "tiktok", "instagram", "youtube", "twitter", "google", "telegram"];
+// ── Platform config ───────────────────────────────────────
+function SiIcon({ icon, size = 18, color }: { icon: { path: string }; size?: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d={icon.path} />
+    </svg>
+  );
+}
 
-function SeedingContent() {
-  const searchParams = useSearchParams();
-  const { platforms, loading, servicesByCategorySlug, servicesByPlatform } = useCatalog();
+const PLATFORM_CFG: Record<string, { label: string; color: string; activeBg: string; logo: React.ReactNode }> = {
+  facebook:  { label: "Facebook",  color: "#1877F2", activeBg: "#E7F0FD", logo: <SiIcon icon={siFacebook}  color="#1877F2" size={20} /> },
+  tiktok:    { label: "TikTok",    color: "#000000", activeBg: "#F0F0F0", logo: <SiIcon icon={siTiktok}    color="#000000" size={20} /> },
+  instagram: { label: "Instagram", color: "#C13584", activeBg: "#FDF2F8", logo: <SiIcon icon={siInstagram} color="#C13584" size={20} /> },
+  youtube:   { label: "YouTube",   color: "#FF0000", activeBg: "#FFF0F0", logo: <SiIcon icon={siYoutube}   color="#FF0000" size={20} /> },
+  twitter:   { label: "Twitter/X", color: "#000000", activeBg: "#F0F0F0", logo: <SiIcon icon={siX}         color="#000000" size={20} /> },
+  telegram:  { label: "Telegram",  color: "#229ED9", activeBg: "#EFF8FF", logo: <SiIcon icon={siTelegram}  color="#229ED9" size={20} /> },
+};
 
-  const rawPlatform = searchParams.get("platform") ?? "facebook";
-  const platform: PlatformId = VALID_PLATFORMS.includes(rawPlatform as PlatformId)
-    ? (rawPlatform as PlatformId)
-    : "facebook";
+const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string }> = {
+  PENDING:    { label: "Chờ xử lý",        color: "#CA8A04", bg: "#FEF9C3" },
+  PROCESSING: { label: "Đang xử lý",       color: "#2563EB", bg: "#DBEAFE" },
+  IN_PROGRESS:{ label: "Đang chạy",        color: "#0EA5E9", bg: "#E0F2FE" },
+  COMPLETED:  { label: "Hoàn thành",       color: "#16A34A", bg: "#DCFCE7" },
+  PARTIAL:    { label: "Hoàn thành 1 phần",color: "#D97706", bg: "#FEF3C7" },
+  CANCELED:   { label: "Đã hủy",           color: "#64748B", bg: "#F1F5F9" },
+  FAILED:     { label: "Thất bại",          color: "#DC2626", bg: "#FEE2E2" },
+  ERROR:      { label: "Lỗi",               color: "#DC2626", bg: "#FEE2E2" },
+};
 
-  // "Loại dịch vụ" = category con thật từ backend (slug). Hỗ trợ cả key cũ kiểu "Like"
-  // (từ sidebar chính) bằng cách map mờ sang slug chứa từ khóa tương ứng.
-  const types = useMemo(() => {
-    const p = platforms.find((x) => x.slug === platform);
-    return (p?.children ?? []).map((c) => ({ key: c.slug, label: c.label }));
-  }, [platforms, platform]);
+const LIMIT_OPTIONS = [10, 25, 50, 100];
 
-  const rawType = searchParams.get("serviceType") ?? "";
-  const serviceType = useMemo(() => {
-    if (types.some((t) => t.key === rawType)) return rawType;
-    const keyword = rawType.toLowerCase().replace(/\s+/g, "-");
-    const KEYWORD_MAP: Record<string, string> = {
-      follow: "follower", subscribe: "subscriber", member: "member",
-      view: "view", like: "like", comment: "comment", share: "share",
-      retweet: "repost", livestream: "live",
-    };
-    const mapped = KEYWORD_MAP[keyword] ?? keyword;
-    const fuzzy = types.find((t) => t.key.includes(mapped));
-    return (fuzzy ?? types[0])?.key ?? "";
-  }, [types, rawType]);
+const ALL_COLS = [
+  { key: "orderNumber", label: "Mã đơn" },
+  { key: "link",        label: "Liên kết" },
+  { key: "servicePublicId", label: "Object ID" },
+  { key: "serviceName", label: "Dịch vụ" },
+  { key: "quantity",    label: "Số lượng" },
+  { key: "startCount",  label: "Đã bắt đầu" },
+  { key: "remains",     label: "Tiến độ" },
+  { key: "charge",      label: "Tổng tiền" },
+  { key: "status",      label: "Trạng thái" },
+  { key: "createdAt",   label: "Ngày tạo" },
+] as const;
+type ColKey = typeof ALL_COLS[number]["key"];
 
-  const services = useMemo(() => {
-    const inCategory = serviceType ? servicesByCategorySlug(serviceType) : [];
-    // category con không có dịch vụ → hiện toàn bộ dịch vụ của platform
-    const list = inCategory.length > 0 ? inCategory : servicesByPlatform(platform);
-    return list.map(toUiService);
-  }, [serviceType, platform, servicesByCategorySlug, servicesByPlatform]);
+// ── Order History tab ─────────────────────────────────────
+function OrderHistoryPanel() {
+  const [orders,    setOrders]    = useState<ApiOrder[]>([]);
+  const [page,      setPage]      = useState(1);
+  const [total,     setTotal]     = useState(0);
+  const [limit,     setLimit]     = useState(10);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState("");
+  const [msg,       setMsg]       = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [colVisible,  setColVisible]  = useState<Record<ColKey, boolean>>(
+    Object.fromEntries(ALL_COLS.map((c) => [c.key, true])) as Record<ColKey, boolean>
+  );
+  const [showColMenu, setShowColMenu] = useState(false);
+  const [filters, setFilters] = useState<Partial<Record<ColKey, string>>>({});
+  const { refreshWallet } = useAuth();
 
-  const rawTab = searchParams.get("tab") ?? "order";
-  const tab: "order" | "history" = rawTab === "history" ? "history" : "order";
+  const load = useCallback(async (p: number, lim = limit) => {
+    setLoading(true); setError("");
+    try {
+      const res = await ordersApi.list({ page: p, limit: lim });
+      setOrders(res.data); setTotal(res.meta.total); setPage(p);
+      setLastUpdated(new Date());
+    } catch (e) { setError(e instanceof ApiError ? e.message : "Không tải được lịch sử."); }
+    finally { setLoading(false); }
+  }, [limit]);
 
-  const colors = platformColors[platform] ?? platformColors.facebook;
-  const typeLabel = types.find((t) => t.key === serviceType)?.label ?? "Dịch vụ";
+  useEffect(() => { void load(1); }, [load]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-        <CircularProgress />
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(() => void load(page), 30000);
+    return () => clearInterval(id);
+  }, [autoRefresh, page, load]);
+
+  async function handleCancel(id: string) {
+    try { await ordersApi.cancel(id); setMsg("Đã gửi yêu cầu hủy."); void refreshWallet(); void load(page); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "Hủy thất bại."); }
+  }
+  async function handleRefill(id: string) {
+    try { await ordersApi.refill(id); setMsg("Đã gửi yêu cầu bảo hành."); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "Refill thất bại."); }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const selectedSet = new Set(selectedIds);
+  const allSelected = orders.length > 0 && orders.every((o) => selectedSet.has(o.id));
+  const someSelected = orders.some((o) => selectedSet.has(o.id)) && !allSelected;
+
+  function toggleAll() {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(orders.map((o) => o.id));
+  }
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  const visibleCols = ALL_COLS.filter((c) => colVisible[c.key]);
+
+  const btnBase = {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    border: "1px solid", borderColor: "divider", borderRadius: "7px",
+    bgcolor: "background.paper", cursor: "pointer", transition: "all 120ms",
+    "&:hover": { borderColor: "#2563EB", color: "#2563EB" },
+  };
+
+  const agoCopy = lastUpdated
+    ? (() => {
+        const s = Math.round((Date.now() - lastUpdated.getTime()) / 1000);
+        if (s < 60) return `${s}s trước`;
+        return `${Math.round(s / 60)}m trước`;
+      })()
+    : "—";
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column" }}>
+
+      {/* ── Toolbar ── */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box component="button" onClick={() => void load(page)}
+          sx={{ ...btnBase, gap: 0.5, px: 2, py: 0.75, fontSize: "12px", color: "text.secondary" }}>
+          <RefreshCw size={13} /> Làm mới
+        </Box>
+
+        {/* Auto refresh toggle */}
+        <Box component="button" onClick={() => setAutoRefresh((v) => !v)}
+          sx={{ ...btnBase, gap: 0.5, px: 2, py: 0.75, fontSize: "12px", color: autoRefresh ? "#2563EB" : "text.secondary", borderColor: autoRefresh ? "#2563EB" : "divider", bgcolor: autoRefresh ? alpha("#2563EB", 0.06) : "background.paper" }}>
+          <RefreshCw size={13} style={{ animation: autoRefresh ? "spin 2s linear infinite" : "none" }} />
+          {autoRefresh ? "On" : "Off"}
+        </Box>
+
+        <Box sx={{ flex: 1 }} />
+        <Typography sx={{ fontSize: "12px", color: "text.disabled" }}>
+          Cập nhật lần cuối: {agoCopy}
+        </Typography>
       </Box>
-    );
+
+      {/* ── Messages ── */}
+      {(msg || error) && (
+        <Box sx={{ px: 2, pt: 1 }}>
+          {msg   && <Box sx={{ px: 2.5, py: 1.25, borderRadius: "8px", bgcolor: alpha("#2563EB", 0.07), color: "#2563EB",  fontSize: "12px", mb: 0.5 }}>{msg}</Box>}
+          {error && <Box sx={{ px: 2.5, py: 1.25, borderRadius: "8px", bgcolor: alpha("#DC2626", 0.07), color: "#DC2626", fontSize: "12px" }}>{error}</Box>}
+        </Box>
+      )}
+
+      {/* ── Title + col settings ── */}
+      <Box sx={{ display: "flex", alignItems: "center", px: 2, pt: 1.5, pb: 1 }}>
+        <Typography sx={{ fontSize: "14px", fontWeight: 700, flex: 1 }}>Lịch sử đơn hàng</Typography>
+        <Box sx={{ position: "relative" }}>
+          <Tooltip title="Hiển thị cột">
+            <Box component="button" onClick={() => setShowColMenu((v) => !v)}
+              sx={{ ...btnBase, width: 32, height: 32, color: showColMenu ? "#2563EB" : "text.secondary" }}>
+              <Settings2 size={16} />
+            </Box>
+          </Tooltip>
+          {showColMenu && (
+            <Box sx={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 20, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "10px", p: 1, minWidth: 180, boxShadow: "0 4px 20px rgba(0,0,0,0.10)" }}>
+              {ALL_COLS.map((col) => (
+                <Box key={col.key} component="button" onClick={() => setColVisible((v) => ({ ...v, [col.key]: !v[col.key] }))}
+                  sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%", px: 1, py: 0.625, border: "none", bgcolor: "transparent", cursor: "pointer", borderRadius: "6px", "&:hover": { bgcolor: alpha("#2563EB", 0.06) } }}>
+                  <Box sx={{ width: 14, height: 14, borderRadius: "3px", border: "1.5px solid", borderColor: colVisible[col.key] ? "#2563EB" : "#CBD5E1", bgcolor: colVisible[col.key] ? "#2563EB" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {colVisible[col.key] && <Box component="span" sx={{ color: "white", fontSize: "9px", lineHeight: 1, fontWeight: 800 }}>✓</Box>}
+                  </Box>
+                  <Typography sx={{ fontSize: "12px", color: "text.primary" }}>{col.label}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* ── Table ── */}
+      <Box sx={{ overflowX: "auto" }}>
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+          <Box component="thead">
+            {/* Header row */}
+            <Box component="tr" sx={{ bgcolor: alpha("#F8FAFC", 0.8) }}>
+              <Box component="th" sx={{ width: 36, px: 1.5, py: 1, textAlign: "center", borderBottom: "1px solid", borderColor: "divider" }}>
+                <Checkbox size="small" checked={allSelected} indeterminate={someSelected}
+                  onChange={toggleAll} sx={{ p: 0, "& .MuiSvgIcon-root": { fontSize: 16 } }} />
+              </Box>
+              <Box component="th" sx={{ px: 1.5, py: 1, textAlign: "left", borderBottom: "1px solid", borderColor: "divider", whiteSpace: "nowrap", fontSize: "11px", fontWeight: 700, color: "text.secondary", letterSpacing: "0.04em", textTransform: "uppercase" }}>Thao tác</Box>
+              {visibleCols.map((col) => (
+                <Box key={col.key} component="th" sx={{ px: 1.5, py: 1, textAlign: "left", borderBottom: "1px solid", borderColor: "divider", whiteSpace: "nowrap", fontSize: "11px", fontWeight: 700, color: "text.secondary", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  {col.label}
+                </Box>
+              ))}
+            </Box>
+            {/* Filter row */}
+            <Box component="tr" sx={{ bgcolor: "background.paper" }}>
+              <Box component="td" colSpan={2} sx={{ px: 1.5, py: 0.625, borderBottom: "1px solid", borderColor: "divider" }}>
+                <InputBase placeholder="Tìm kiếm..." value={filters.orderNumber ?? ""} onChange={(e) => setFilters((f) => ({ ...f, orderNumber: e.target.value }))}
+                  sx={{ fontSize: "12px", width: "100%", "& input": { p: 0, color: "#94A3B8" } }} />
+              </Box>
+              {visibleCols.map((col) => (
+                <Box key={col.key} component="td" sx={{ px: 1.5, py: 0.625, borderBottom: "1px solid", borderColor: "divider" }}>
+                  {["link","serviceName","servicePublicId","quantity","startCount","charge"].includes(col.key) ? (
+                    <InputBase placeholder={col.label} value={filters[col.key] ?? ""} onChange={(e) => setFilters((f) => ({ ...f, [col.key]: e.target.value }))}
+                      sx={{ fontSize: "12px", width: "100%", "& input": { p: 0, color: "#94A3B8" } }} />
+                  ) : <Box />}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          <Box component="tbody">
+            {loading ? (
+              <Box component="tr">
+                <Box component="td" colSpan={visibleCols.length + 2} sx={{ textAlign: "center", py: 6 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              </Box>
+            ) : orders.length === 0 ? (
+              <Box component="tr">
+                <Box component="td" colSpan={visibleCols.length + 2} sx={{ textAlign: "center", py: 6, color: "text.disabled", fontSize: "13px" }}>
+                  Không có dữ liệu.
+                </Box>
+              </Box>
+            ) : orders.map((order, i) => {
+              const st = STATUS_CFG[order.status] ?? STATUS_CFG.PENDING;
+              const done = order.quantity - (order.remains ?? order.quantity);
+              const pct = order.status === "COMPLETED" ? 100 : Math.round((done / order.quantity) * 100);
+              const isSelected = selectedSet.has(order.id);
+              const canCancel = order.status === "PENDING" || order.status === "PROCESSING";
+              const canRefill = order.status === "COMPLETED" || order.status === "PARTIAL";
+              return (
+                <Box key={order.id} component="tr"
+                  sx={{ bgcolor: isSelected ? alpha("#2563EB", 0.04) : i % 2 === 0 ? "background.paper" : alpha("#F8FAFC", 0.5), "&:hover": { bgcolor: alpha("#2563EB", 0.03) } }}>
+                  {/* Checkbox */}
+                  <Box component="td" sx={{ px: 1.5, py: 1, textAlign: "center", borderBottom: "1px solid", borderColor: "divider" }}>
+                    <Checkbox size="small" checked={isSelected} onChange={() => toggleOne(order.id)} sx={{ p: 0, "& .MuiSvgIcon-root": { fontSize: 16 } }} />
+                  </Box>
+                  {/* Actions */}
+                  <Box component="td" sx={{ px: 1, py: 1, borderBottom: "1px solid", borderColor: "divider", whiteSpace: "nowrap" }}>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                      {canCancel && (
+                        <Tooltip title="Hủy đơn">
+                          <Box component="button" onClick={() => void handleCancel(order.id)}
+                            sx={{ width: 28, height: 28, border: "1px solid", borderColor: alpha("#DC2626", 0.3), borderRadius: "7px", bgcolor: "transparent", color: "#DC2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", "&:hover": { bgcolor: alpha("#DC2626", 0.06) } }}>
+                            <XCircle size={13} />
+                          </Box>
+                        </Tooltip>
+                      )}
+                      {canRefill && (
+                        <Tooltip title="Bảo hành">
+                          <Box component="button" onClick={() => void handleRefill(order.id)}
+                            sx={{ width: 28, height: 28, border: "1px solid", borderColor: alpha("#0EA5E9", 0.3), borderRadius: "7px", bgcolor: "transparent", color: "#0EA5E9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", "&:hover": { bgcolor: alpha("#0EA5E9", 0.06) } }}>
+                            <RotateCcw size={13} />
+                          </Box>
+                        </Tooltip>
+                      )}
+                      {!canCancel && !canRefill && <Box sx={{ width: 26 }} />}
+                    </Box>
+                  </Box>
+                  {/* Data cols */}
+                  {visibleCols.map((col) => {
+                    let cell: React.ReactNode = "—";
+                    switch (col.key) {
+                      case "orderNumber":
+                        cell = <Typography sx={{ fontSize: "12px", fontWeight: 700, color: "#2563EB" }}>#{order.orderNumber}</Typography>;
+                        break;
+                      case "link":
+                        cell = (
+                          <Typography component="a" href={order.link} target="_blank" rel="noopener noreferrer"
+                            sx={{ fontSize: "12px", color: "#2563EB", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 0.4, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", "&:hover": { textDecoration: "underline" } }}>
+                            <ExternalLink size={10} style={{ flexShrink: 0 }} />{order.link}
+                          </Typography>
+                        );
+                        break;
+                      case "servicePublicId":
+                        cell = <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{order.servicePublicId ?? "—"}</Typography>;
+                        break;
+                      case "serviceName":
+                        cell = <Typography sx={{ fontSize: "12px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.serviceName ?? "—"}</Typography>;
+                        break;
+                      case "quantity":
+                        cell = <Typography sx={{ fontSize: "12px" }}>{order.quantity.toLocaleString("vi-VN")}</Typography>;
+                        break;
+                      case "startCount":
+                        cell = <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{order.startCount ?? 0}</Typography>;
+                        break;
+                      case "remains":
+                        cell = (
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 80 }}>
+                            <Box sx={{ flex: 1, height: 4, borderRadius: "2px", bgcolor: alpha("#2563EB", 0.12), overflow: "hidden" }}>
+                              <Box sx={{ height: "100%", width: `${Number.isFinite(pct) ? pct : 0}%`, bgcolor: "#2563EB", borderRadius: "2px" }} />
+                            </Box>
+                            <Typography sx={{ fontSize: "11px", color: "text.secondary", minWidth: 28 }}>{Number.isFinite(pct) ? pct : 0}%</Typography>
+                          </Box>
+                        );
+                        break;
+                      case "charge":
+                        cell = <Typography sx={{ fontSize: "12px", fontWeight: 700 }}>{formatVND(order.charge)}</Typography>;
+                        break;
+                      case "status":
+                        cell = <Box sx={{ display: "inline-flex", px: 1, py: 0.25, borderRadius: "6px", bgcolor: st.bg, color: st.color, fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}>{st.label}</Box>;
+                        break;
+                      case "createdAt":
+                        cell = <Typography sx={{ fontSize: "12px", color: "text.secondary", whiteSpace: "nowrap" }}>{formatDate(order.createdAt)}</Typography>;
+                        break;
+                    }
+                    return (
+                      <Box key={col.key} component="td" sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider", verticalAlign: "middle" }}>
+                        {cell}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* ── Pagination ── */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1.25, borderTop: "1px solid", borderColor: "divider", flexWrap: "wrap" }}>
+        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Số hàng</Typography>
+        <Select size="small" value={limit} onChange={(e) => { const l = Number(e.target.value); setLimit(l); void load(1, l); }}
+          sx={{ fontSize: "12px", height: 28, "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" }, "& .MuiSelect-select": { py: 0.375, pr: "28px !important" } }}>
+          {LIMIT_OPTIONS.map((v) => <MenuItem key={v} value={v} sx={{ fontSize: "12px" }}>{v}</MenuItem>)}
+        </Select>
+
+        <Box sx={{ flex: 1 }} />
+
+        {selectedIds.length > 0 && (
+          <Typography sx={{ fontSize: "12px", color: "#2563EB" }}>Đã chọn {selectedIds.length}</Typography>
+        )}
+
+        {/* Page nav */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          {[
+            { icon: <ChevronFirst size={14} />, onClick: () => void load(1), disabled: page <= 1 },
+            { icon: <ChevronLeft size={14} />, onClick: () => void load(page - 1), disabled: page <= 1 },
+          ].map(({ icon, onClick, disabled }, i) => (
+            <Box key={i} component="button" onClick={onClick} disabled={disabled}
+              sx={{ ...btnBase, width: 28, height: 28, color: "text.secondary", opacity: disabled ? 0.35 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+              {icon}
+            </Box>
+          ))}
+          <Typography sx={{ fontSize: "12px", color: "text.secondary", px: 1, minWidth: 40, textAlign: "center" }}>{page}/{totalPages}</Typography>
+          {[
+            { icon: <ChevronRightIcon size={14} />, onClick: () => void load(page + 1), disabled: page >= totalPages },
+            { icon: <ChevronLast size={14} />, onClick: () => void load(totalPages), disabled: page >= totalPages },
+          ].map(({ icon, onClick, disabled }, i) => (
+            <Box key={i} component="button" onClick={onClick} disabled={disabled}
+              sx={{ ...btnBase, width: 28, height: 28, color: "text.secondary", opacity: disabled ? 0.35 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+              {icon}
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// ── Main content ──────────────────────────────────────────
+function SeedingContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { platforms, loading: catalogLoading, servicesByCategorySlug, servicesByPlatform } = useCatalog();
+  const { wallet, refreshWallet } = useAuth();
+
+  const tab = searchParams.get("tab") === "history" ? "history" : "order";
+
+  // Ưu tiên thứ tự platform: facebook trước, rồi các platform còn lại theo thứ tự backend
+  const PLATFORM_ORDER = ["facebook", "tiktok", "instagram", "youtube", "twitter", "telegram"];
+  const platformList = useMemo(() => {
+    const slugs = platforms.map((p) => p.slug);
+    return [
+      ...PLATFORM_ORDER.filter((s) => slugs.includes(s)),
+      ...slugs.filter((s) => !PLATFORM_ORDER.includes(s)),
+    ];
+  }, [platforms]);
+  const rawPlatform = searchParams.get("platform") ?? "";
+  const platform = platformList.includes(rawPlatform) ? rawPlatform : (platformList[0] ?? "facebook");
+
+  // Category children of active platform — chỉ giữ category có ít nhất 1 service
+  const categories = useMemo(() => {
+    const p = platforms.find((x) => x.slug === platform);
+    return (p?.children ?? [])
+      .map((c) => ({ key: c.slug, label: c.label }))
+      .filter((c) => servicesByCategorySlug(c.key).length > 0);
+  }, [platforms, platform, servicesByCategorySlug]);
+
+  // Active category (serviceType param)
+  const rawType = searchParams.get("serviceType") ?? "";
+  const categorySlug = useMemo(() => {
+    if (categories.some((c) => c.key === rawType)) return rawType;
+    return categories[0]?.key ?? "";
+  }, [categories, rawType]);
+
+  // Services list for current category
+  const services = useMemo(() => {
+    const inCat = categorySlug ? servicesByCategorySlug(categorySlug) : [];
+    const list = inCat.length > 0 ? inCat : servicesByPlatform(platform);
+    return list.map(toUiService);
+  }, [categorySlug, platform, servicesByCategorySlug, servicesByPlatform]);
+
+  // Form state
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [link,     setLink]     = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [note,     setNote]     = useState("");
+  const [submitting,setSubmitting] = useState(false);
+  const [submitted, setSubmitted]  = useState(false);
+  const [error,    setError]    = useState("");
+  const [createdOrder, setCreatedOrder] = useState<ApiOrder | null>(null);
+
+  const activeService = (selectedService && services.find((s) => s.id === selectedService.id)) ?? services[0] ?? null;
+  const qty = Math.min(Math.max(Number(quantity) || (activeService?.min ?? 0), activeService?.min ?? 0), activeService?.max ?? 0);
+  const totalCost = activeService ? qty * activeService.price : 0;
+  const balance = wallet ? Number(wallet.balance) : 0;
+
+  // Reset selection when category changes
+  useEffect(() => { setSelectedService(null); setError(""); }, [categorySlug]);
+
+  function navigate(params: Record<string, string>) {
+    const sp = new URLSearchParams(searchParams.toString());
+    Object.entries(params).forEach(([k, v]) => sp.set(k, v));
+    router.push(`/seeding?${sp.toString()}`);
+  }
+
+  async function handleSubmit() {
+    if (!link.trim() || !activeService || submitting) return;
+    setError(""); setSubmitting(true);
+    try {
+      const order = await ordersApi.create({
+        service: activeService.id,
+        link: link.trim(),
+        quantity: qty,
+        ...(note.trim() ? { note: note.trim() } : {}),
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setCreatedOrder(order);
+      setSubmitted(true);
+      setLink(""); setQuantity(""); setNote("");
+      void refreshWallet();
+      setTimeout(() => { setSubmitted(false); setCreatedOrder(null); }, 6000);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Đặt đơn thất bại.");
+    } finally { setSubmitting(false); }
+  }
+
+  const pcfg = PLATFORM_CFG[platform] ?? { label: platform, color: "#475569", activeBg: "#F1F5F9", logo: null };
+
+  if (catalogLoading) {
+    return <Box sx={{ display: "flex", justifyContent: "center", py: 12 }}><CircularProgress /></Box>;
   }
 
   return (
-    <Box sx={{ width: "100%", display: "flex", gap: 2.5, alignItems: "flex-start" }}>
-      {/* Left: platform + service type sidebar */}
-      <ServiceTypeSidebar platforms={platforms} activePlatform={platform} activeCategorySlug={serviceType} />
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 0 }}>
 
-      {/* Right: main content */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        {/* Page header */}
-        <Box sx={{ mb: 2.5 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
-            <Box
-              sx={{
-                width: 36, height: 36, borderRadius: "10px",
-                bgcolor: alpha(colors.text, 0.1),
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <PlusCircle size={18} color={colors.text} />
-            </Box>
-            <Typography
-              sx={{
-                fontSize: { xs: "18px", sm: "22px" },
-                fontWeight: 800,
-                color: "text.primary",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Đơn Seeding — {typeLabel}
-            </Typography>
-          </Box>
-          <Typography sx={{ fontSize: "13px", color: "text.secondary", ml: "52px" }}>
-            Tạo và quản lý đơn hàng tăng tương tác mạng xã hội
-          </Typography>
-        </Box>
-
-        {/* Tab bar */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 0.5,
-            mb: 2,
-            p: 0.5,
-            bgcolor: alpha("#F8FAFC", 0.8),
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: "12px",
-            width: "fit-content",
-          }}
-        >
+      {/* ── Tab bar ── */}
+      <Box sx={{ p: 1, bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ display: "flex", gap: 0.75, p: 0.5, borderRadius: "10px", bgcolor: alpha("#0F172A", 0.05) }}>
           {([
-            { key: "order", label: "Tạo đơn", icon: <PlusCircle size={15} /> },
-            { key: "history", label: "Lịch sử đơn", icon: <ClipboardList size={15} /> },
+            { key: "order",   label: "Tạo đơn",  icon: <ShoppingCart size={14} /> },
+            { key: "history", label: "Lịch sử",  icon: <History size={14} /> },
           ] as const).map(({ key, label, icon }) => {
-            const isActive = tab === key;
+            const active = tab === key;
             return (
-              <Box
-                key={key}
-                component="a"
-                href={`/seeding?platform=${platform}&serviceType=${encodeURIComponent(serviceType)}&tab=${key}`}
-                sx={{
-                  display: "flex", alignItems: "center", gap: 0.75,
-                  px: 1.5, py: 0.75,
-                  borderRadius: "9px",
-                  textDecoration: "none",
-                  fontSize: "13px", fontWeight: 600,
-                  transition: "all 150ms ease",
-                  bgcolor: isActive ? "background.paper" : "transparent",
-                  color: isActive ? colors.text : "text.secondary",
-                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                  border: isActive ? `1px solid ${alpha(colors.text, 0.15)}` : "1px solid transparent",
-                  "&:hover": {
-                    color: isActive ? colors.text : "text.primary",
-                    bgcolor: isActive ? "background.paper" : alpha("#0F172A", 0.03),
-                  },
-                }}
-              >
-                {icon}
-                {label}
+              <Box key={key} component="button" onClick={() => navigate({ tab: key })}
+                sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, px: 2, py: 1, border: "none", borderRadius: "8px", bgcolor: active ? "background.paper" : "transparent", color: active ? pcfg.color : "text.secondary", fontSize: "13px", fontWeight: active ? 700 : 500, cursor: "pointer", transition: "all 150ms ease", boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none", "&:hover": { color: active ? pcfg.color : "text.primary" } }}>
+                {icon}{label}
               </Box>
             );
           })}
         </Box>
-
-        {/* Content panel */}
-        <Box
-          sx={{
-            bgcolor: "background.paper",
-            borderRadius: "16px",
-            border: "1px solid",
-            borderColor: "divider",
-            p: { xs: 2, sm: 2.5 },
-          }}
-        >
-          {tab === "order" ? (
-            <CreateOrderForm platform={platform} services={services} />
-          ) : (
-            <OrderHistory />
-          )}
-        </Box>
       </Box>
+
+      {tab === "history" ? (
+        <Box sx={{ bgcolor: "background.paper", borderRadius: "0 0 16px 16px", border: "1px solid", borderTop: "none", borderColor: "divider" }}>
+          <OrderHistoryPanel />
+        </Box>
+      ) : (
+        <>
+          {/* ── Platform tabs ── */}
+          <Box sx={{ p: 1, bgcolor: "background.paper", border: "1px solid", borderTop: "none", borderColor: "divider", overflowX: "auto", "&::-webkit-scrollbar": { height: "3px" } }}>
+            <Box sx={{ display: "flex", gap: 0.75, minWidth: "max-content" }}>
+              {platformList.map((pid) => {
+                const cfg = PLATFORM_CFG[pid] ?? { label: pid, color: "#475569", activeBg: "#F1F5F9", logo: null };
+                const isActive = pid === platform;
+                return (
+                  <Box key={pid} component="button" onClick={() => navigate({ platform: pid, serviceType: "", tab: "order" })}
+                    sx={{ display: "flex", alignItems: "center", gap: 0.875, px: 1.75, py: 0.875, border: "1.5px solid", borderColor: isActive ? cfg.color : "divider", borderRadius: "9px", bgcolor: isActive ? cfg.activeBg : "background.paper", color: isActive ? cfg.color : "text.secondary", fontSize: "13px", fontWeight: isActive ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all 150ms", boxShadow: isActive ? `0 2px 8px ${alpha(cfg.color, 0.18)}` : "none", "&:hover": { borderColor: cfg.color, color: cfg.color, bgcolor: alpha(cfg.color, 0.05) } }}>
+                    {cfg.logo}{cfg.label}
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+
+          {/* ── Main body: form left + info panel right ── */}
+          <Box sx={{ display: "flex", gap: 0, alignItems: "flex-start", border: "1px solid", borderTop: "none", borderColor: "divider", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+
+            {/* Left: Form */}
+            <Box sx={{ flex: 1, minWidth: 0, p: { xs: 2, sm: 3 }, display: "flex", flexDirection: "column", gap: 3, borderRight: "1px solid", borderColor: "divider" }}>
+
+              {/* Step 1: Chọn dịch vụ */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: "50%", bgcolor: pcfg.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Typography sx={{ fontSize: "11px", fontWeight: 800, color: "white" }}>1</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>Chọn Dịch Vụ</Typography>
+                </Box>
+
+                {/* Category dropdown */}
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 0.5 }}>Chọn Dịch Vụ</Typography>
+                  <Select size="small" value={categorySlug} onChange={(e) => navigate({ platform, serviceType: e.target.value, tab: "order" })}
+                    fullWidth sx={{ fontSize: "13px", borderRadius: "8px", "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" } }}>
+                    {categories.map((c) => (
+                      <MenuItem key={c.key} value={c.key} sx={{ fontSize: "13px" }}>{c.label}</MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              </Box>
+
+              {/* Step 2: Máy chủ (server/service selection) */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ width: 22, height: 22, borderRadius: "50%", bgcolor: pcfg.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Typography sx={{ fontSize: "11px", fontWeight: 800, color: "white" }}>2</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>Máy chủ</Typography>
+                    <Box sx={{ px: 0.75, py: 0.125, borderRadius: "5px", bgcolor: alpha(pcfg.color, 0.1), color: pcfg.color, fontSize: "11px", fontWeight: 700 }}>{services.length}</Box>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                  {services.length === 0 ? (
+                    <Typography sx={{ fontSize: "13px", color: "text.disabled", py: 2, textAlign: "center" }}>Không có dịch vụ nào.</Typography>
+                  ) : services.map((svc) => {
+                    const isActive = (selectedService ?? services[0])?.id === svc.id;
+                    return (
+                      <Box key={svc.id} onClick={() => setSelectedService(svc)}
+                        sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.25, borderRadius: "10px", border: "1.5px solid", borderColor: isActive ? pcfg.color : "divider", bgcolor: isActive ? alpha(pcfg.color, 0.04) : "background.paper", cursor: "pointer", transition: "all 150ms", "&:hover": { borderColor: pcfg.color } }}>
+                        {/* Radio */}
+                        <Box sx={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid", borderColor: isActive ? pcfg.color : "#CBD5E1", bgcolor: isActive ? pcfg.color : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {isActive && <Box sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: "white" }} />}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                            <Typography sx={{ fontSize: "11px", fontWeight: 700, color: alpha(pcfg.color, 0.7), fontVariantNumeric: "tabular-nums" }}>{svc.id}</Typography>
+                            <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.primary", flex: 1 }}>{svc.name}</Typography>
+                            {svc.refill && <Box sx={{ px: 0.75, py: 0.125, borderRadius: "5px", bgcolor: "#DCFCE7", color: "#16A34A", fontSize: "10px", fontWeight: 700 }}>BH</Box>}
+                            {svc.cancel && <Box sx={{ px: 0.75, py: 0.125, borderRadius: "5px", bgcolor: "#F1F5F9", color: "#64748B", fontSize: "10px", fontWeight: 700 }}>Hủy</Box>}
+                            {svc.dripfeed && <Box sx={{ px: 0.75, py: 0.125, borderRadius: "5px", bgcolor: "#E0F2FE", color: "#0284C7", fontSize: "10px", fontWeight: 700 }}>NG</Box>}
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 1.5, mt: 0.25, flexWrap: "wrap" }}>
+                            <Typography sx={{ fontSize: "11px", color: "text.disabled" }}>Min: {svc.min.toLocaleString()} · Max: {svc.max.toLocaleString()}</Typography>
+                            <Typography sx={{ fontSize: "11px", fontWeight: 700, color: pcfg.color }}>{svc.price.toLocaleString("vi-VN")} ₫/1</Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+
+              {/* Step 3: Chi tiết */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: "50%", bgcolor: pcfg.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Typography sx={{ fontSize: "11px", fontWeight: 800, color: "white" }}>3</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>Chi tiết đơn hàng</Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {/* Link */}
+                  <Box>
+                    <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 0.5 }}>Liên Kết *</Typography>
+                    <Box sx={{ px: 1.5, height: 40, borderRadius: "8px", border: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", "&:focus-within": { borderColor: pcfg.color, boxShadow: `0 0 0 3px ${alpha(pcfg.color, 0.08)}` } }}>
+                      <InputBase value={link} onChange={(e) => setLink(e.target.value)} placeholder="Nhập link..." fullWidth sx={{ fontSize: "13px", "& input": { p: 0 } }} />
+                    </Box>
+                    {activeService && (
+                      <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 0.4 }}>
+                        VD: https://facebook.com/yourpage
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Quantity */}
+                  {activeService && (
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Số Lượng</Typography>
+                        <Typography sx={{ fontSize: "11px", color: "text.disabled" }}>Min {activeService.min.toLocaleString()} · Max {activeService.max.toLocaleString()}</Typography>
+                      </Box>
+                      <Box sx={{ px: 1.5, height: 40, borderRadius: "8px", border: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", "&:focus-within": { borderColor: pcfg.color, boxShadow: `0 0 0 3px ${alpha(pcfg.color, 0.08)}` } }}>
+                        <InputBase type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={String(activeService.min)} fullWidth sx={{ fontSize: "13px", "& input": { p: 0 } }} />
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Note */}
+                  <Box>
+                    <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 0.5 }}>Ghi Chú <Box component="span" sx={{ color: "text.disabled" }}>(tuỳ chọn)</Box></Typography>
+                    <Box sx={{ borderRadius: "8px", border: "1px solid", borderColor: "divider", "&:focus-within": { borderColor: pcfg.color, boxShadow: `0 0 0 3px ${alpha(pcfg.color, 0.08)}` } }}>
+                      <InputBase multiline minRows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Thêm ghi chú nếu có..." fullWidth sx={{ px: 1.5, py: 1, fontSize: "13px" }} />
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Right: Info + Summary */}
+            <Box sx={{ width: { xs: "100%", md: 320 }, flexShrink: 0, display: "flex", flexDirection: "column" }}>
+
+              {/* Service info */}
+              {activeService && (
+                <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
+                  <Typography sx={{ fontSize: "13px", fontWeight: 700, color: pcfg.color, mb: 1.5 }}>{activeService.name}</Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {[
+                      { label: "Thời Gian Trung Bình:", value: activeService.averageTime ?? "—" },
+                      { label: "Tốc Độ:", value: activeService.speed === "fast" ? "Nhanh" : activeService.speed === "slow" ? "Chậm" : "Vừa" },
+                      { label: "Bảo Hành:", value: activeService.refill ? "Có" : "Không" },
+                      { label: "Cho Phép Hủy:", value: activeService.cancel ? "Có" : "Không" },
+                      { label: "Nhỏ Giọt:", value: activeService.dripfeed ? "Có" : "Không" },
+                    ].map(({ label, value }) => (
+                      <Box key={label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{label}</Typography>
+                        <Box sx={{ px: 1, py: 0.25, borderRadius: "6px", bgcolor: alpha(pcfg.color, 0.08), color: pcfg.color, fontSize: "12px", fontWeight: 600 }}>{value}</Box>
+                      </Box>
+                    ))}
+                  </Box>
+                  {activeService.description && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <Typography sx={{ fontSize: "11px", fontWeight: 600, color: "text.secondary", mb: 0.5 }}>Mô Tả Dịch Vụ</Typography>
+                      <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: alpha("#F8FAFC", 0.8), border: "1px solid", borderColor: "divider" }}>
+                        <Typography sx={{ fontSize: "12px", color: "text.secondary", lineHeight: 1.6 }}>{activeService.description}</Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              )}
+
+              {/* Summary + Submit */}
+              <Box sx={{ p: 2.5 }}>
+                <Typography sx={{ fontSize: "13px", fontWeight: 700, mb: 1.5 }}>Tổng kết đơn hàng</Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mb: 1.5 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Số lượng:</Typography>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>{qty > 0 ? qty.toLocaleString("vi-VN") : 0}</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Giá/1000:</Typography>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>
+                      {activeService ? `${(activeService.price * 1000).toLocaleString("vi-VN")} ₫/1000` : "—"}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ height: "1px", bgcolor: "divider", my: 0.5 }} />
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography sx={{ fontSize: "14px", fontWeight: 700 }}>Tổng Thanh Toán:</Typography>
+                    <Typography sx={{ fontSize: "16px", fontWeight: 800, color: pcfg.color }}>
+                      {totalCost > 0 ? `${totalCost.toLocaleString("vi-VN")} ₫` : "0 ₫"}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Balance */}
+                <Box sx={{ px: 2.5, py: 1.25, borderRadius: "8px", bgcolor: alpha("#10B981", 0.07), border: "1px solid", borderColor: alpha("#10B981", 0.15), mb: 1.5 }}>
+                  <Typography sx={{ fontSize: "12px", color: "#059669", fontWeight: 600 }}>
+                    Số dư: {balance.toLocaleString("vi-VN")} ₫
+                  </Typography>
+                </Box>
+
+                {error && <Box sx={{ mb: 1.5, px: 1.5, py: 1, borderRadius: "8px", bgcolor: alpha("#DC2626", 0.07), color: "#DC2626", fontSize: "12px" }}>{error}</Box>}
+                {submitted && createdOrder && (
+                  <Box sx={{ mb: 1.5, px: 1.5, py: 1, borderRadius: "8px", bgcolor: alpha("#10B981", 0.07), color: "#059669", fontSize: "12px", display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <CheckCircle2 size={14} /> Đặt đơn #{createdOrder.orderNumber} thành công!
+                  </Box>
+                )}
+
+                <Box component="button" onClick={() => void handleSubmit()}
+                  disabled={!activeService || !link.trim() || submitting || submitted}
+                  sx={{ width: "100%", py: 1.5, borderRadius: "8px", border: "none", bgcolor: submitted ? "#10B981" : pcfg.color, color: "white", fontSize: "13px", fontWeight: 700, cursor: !activeService || !link.trim() ? "not-allowed" : "pointer", opacity: !activeService || !link.trim() ? 0.65 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, transition: "all 150ms", "&:hover:not(:disabled)": { opacity: 0.9 } }}>
+                  {submitting ? <><CircularProgress size={15} color="inherit" />Đang đặt...</> : submitted ? <><CheckCircle2 size={15} />Đã đặt thành công!</> : <><ShoppingCart size={15} />Xác Nhận</>}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* ── Terms ── */}
+          <Box sx={{ mt: 2, p: 2.5, borderRadius: "14px", border: "1px solid", borderColor: alpha("#2563EB", 0.15), bgcolor: alpha("#EFF6FF", 0.6) }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
+              <Box sx={{ width: 22, height: 22, borderRadius: "6px", bgcolor: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Shield size={13} color="white" />
+              </Box>
+              <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "#2563EB" }}>Điều khoản sử dụng</Typography>
+            </Box>
+            <Box component="ol" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+              {[
+                "Link phải hợp lệ và có thể truy cập được (không phải riêng tư hoặc đã bị xóa).",
+                "Không sử dụng dịch vụ cho nội dung vi phạm pháp luật (lừa đảo, cờ bạc, bạo lực, ma túy...). Vi phạm có thể bị khóa tài khoản.",
+                "Không hoàn tiền khi đơn hàng đã bắt đầu xử lý.",
+                "Thời gian hoàn thành dịch vụ có thể thay đổi tùy theo nền tảng.",
+                "Chúng tôi có quyền từ chối cung cấp dịch vụ nếu phát hiện gian lận.",
+              ].map((t, i) => (
+                <Box key={i} component="li" sx={{ fontSize: "12px", color: "text.secondary", lineHeight: 1.6 }}>{t}</Box>
+              ))}
+            </Box>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

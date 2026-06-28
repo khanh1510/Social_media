@@ -7,7 +7,7 @@ import {
 } from "simple-icons";
 import { useState } from "react";
 import ServiceItem from "./ServiceItem";
-import { platformColors } from "@/data/services";
+import { platformColors, FALLBACK_PLATFORM_COLOR } from "@/data/services";
 import type { PlatformCategory as PlatformCategoryType } from "@/types";
 
 function SiIcon({ icon, size = 22, color }: { icon: { path: string }; size?: number; color: string }) {
@@ -35,7 +35,7 @@ interface PlatformCategoryProps {
 
 export default function PlatformCategory({ category, defaultOpen = false }: PlatformCategoryProps) {
   const [open, setOpen] = useState(defaultOpen);
-  const colors = platformColors[category.id];
+  const colors = platformColors[category.id] ?? FALLBACK_PLATFORM_COLOR;
   const total = category.services.length;
 
   return (

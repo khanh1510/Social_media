@@ -48,7 +48,7 @@ export default function TabTelegram() {
           Hướng dẫn liên kết
         </Typography>
         {[
-          'Mở Telegram, tìm bot @SocialMediaVN_Bot',
+          'Mở Telegram, tìm bot @SignalGitBot',
           'Gửi lệnh /start để khởi động bot',
           'Bot sẽ gửi cho bạn một mã liên kết 6 chữ số',
           'Nhập mã đó vào ô bên dưới và nhấn Liên kết',
@@ -105,14 +105,14 @@ export default function TabTelegram() {
           sx={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 0.625,
-            px: 2,
-            py: 1,
-            borderRadius: "10px",
+            gap: 0.75,
+            px: 2.5,
+            py: 1.25,
+            borderRadius: "8px",
             border: "none",
             background: "#0284C7",
             color: "white",
-            fontSize: "12px",
+            fontSize: "13px",
             fontWeight: 700,
             cursor: "pointer",
             whiteSpace: "nowrap",

@@ -1,20 +1,23 @@
 "use client";
 
-import { Box, Typography, alpha } from "@mui/material";
+import { Box, CircularProgress, Typography, alpha } from "@mui/material";
 import { Key } from "lucide-react";
-
-const mockApiHistory = [
-  { id: 1, key: "sk-live-4xKz9mN2pQrT8vW...", action: "Tạo mới", time: "31/05/2026 14:30", ip: "113.161.xx.xx" },
-  { id: 2, key: "sk-live-1aYb7nMqRsUvDjE...", action: "Tạo mới", time: "15/04/2026 10:22", ip: "42.112.xx.xx" },
-  { id: 3, key: "sk-live-9cZw5kPtGhNxFoL...", action: "Tạo mới", time: "02/03/2026 08:11", ip: "171.244.xx.xx" },
-];
-
-const actionColors: Record<string, { bg: string; text: string }> = {
-  "Tạo mới": { bg: alpha("#2563EB", 0.08), text: "#2563EB" },
-  "Vô hiệu hoá": { bg: alpha("#DC2626", 0.08), text: "#DC2626" },
-};
+import { useEffect, useState } from "react";
+import { usersApi } from "@/lib/api";
+import type { ApiKey } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
 
 export default function TabApiKeyHistory() {
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    usersApi.apiKeys()
+      .then(setKeys)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <Box sx={{ py: 3 }}>
       <Box sx={{ mb: 2.5 }}>
@@ -22,68 +25,76 @@ export default function TabApiKeyHistory() {
           Lịch Sử API Key
         </Typography>
         <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-          Các lần tạo mới hoặc thu hồi API key của tài khoản.
+          Danh sách API key đang hoạt động của tài khoản.
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        {mockApiHistory.map((h) => {
-          const ac = actionColors[h.action] ?? actionColors["Tạo mới"];
-          return (
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : keys.length === 0 ? (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, py: 6, borderRadius: "14px", border: "1px dashed", borderColor: "divider", bgcolor: alpha("#0F172A", 0.02) }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: alpha("#64748B", 0.08), display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Key size={22} color="#94A3B8" />
+          </Box>
+          <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Chưa có API key nào.</Typography>
+          <Typography sx={{ fontSize: "12px", color: "text.disabled", textAlign: "center", maxWidth: 240, lineHeight: 1.6 }}>
+            Tạo API key tại tab <strong>Thông Tin</strong> để sử dụng Public API v2.
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {keys.map((k) => (
             <Box
-              key={h.id}
+              key={k.id}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                px: 2,
-                py: 1.5,
+                display: "flex", alignItems: "center", gap: 2,
+                px: 2, py: 1.5,
                 borderRadius: "12px",
-                border: "1px solid",
-                borderColor: "divider",
+                border: "1px solid", borderColor: "divider",
                 bgcolor: "background.paper",
               }}
             >
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: "10px",
-                  bgcolor: alpha("#0F172A", 0.04),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Key size={17} color="#94A3B8" />
+              <Box sx={{ flexShrink: 0, width: 36, height: 36, borderRadius: "10px", bgcolor: alpha("#2563EB", 0.07), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Key size={17} color="#2563EB" />
               </Box>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.primary", fontFamily: "monospace" }}>
-                  {h.key}
+                <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "text.primary" }}>
+                  {k.name ?? "(không tên)"}
                 </Typography>
-                <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-                  {h.ip} · {h.time}
+                <Typography sx={{ fontSize: "11px", color: "text.disabled", fontFamily: "monospace" }}>
+                  {k.keyPrefix ?? "sk-"}••••••
                 </Typography>
               </Box>
 
+              <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+                <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
+                  Tạo: {formatDate(k.createdAt)}
+                </Typography>
+                <Typography sx={{ fontSize: "11px", color: k.lastUsedAt ? "#0284C7" : "text.disabled" }}>
+                  {k.lastUsedAt ? `Dùng lần cuối: ${formatDate(k.lastUsedAt)}` : "Chưa sử dụng"}
+                </Typography>
+              </Box>
+
+              {/* Trạng thái active */}
               <Box
                 component="span"
                 sx={{
-                  px: 1.25, py: 0.25,
-                  borderRadius: "99px",
-                  bgcolor: ac.bg, color: ac.text,
-                  fontSize: "10px", fontWeight: 700,
                   flexShrink: 0,
+                  px: 1, py: 0.25, borderRadius: "99px",
+                  bgcolor: k.isActive !== false ? alpha("#059669", 0.08) : alpha("#DC2626", 0.08),
+                  color: k.isActive !== false ? "#059669" : "#DC2626",
+                  fontSize: "10px", fontWeight: 700,
                 }}
               >
-                {h.action}
+                {k.isActive !== false ? "Hoạt động" : "Vô hiệu"}
               </Box>
             </Box>
-          );
-        })}
-      </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

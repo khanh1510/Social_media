@@ -58,7 +58,7 @@ const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 
 // Contact channels shown when Admin is selected
 const CONTACT_CHANNELS = [
-  { icon: <Mail size={18} color="white" />, label: "Email", value: "support@socialmedia.vn", color: "#2563EB" },
+  { icon: <Mail size={18} color="white" />, label: "Email", value: "support@SignalGit", color: "#2563EB" },
 ];
 
 const STATUS_CONFIG = {
@@ -251,7 +251,7 @@ export default function DepositPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 0.75,
-                py: 1,
+                py: 1.25,
                 borderRadius: "9px",
                 border: "none",
                 cursor: "pointer",
@@ -334,8 +334,8 @@ export default function DepositPage() {
                       display: "flex",
                       alignItems: "center",
                       gap: 1.25,
-                      px: 1.25,
-                      py: 1.125,
+                      px: 1.5,
+                      py: 1.5,
                       borderRadius: "12px",
                       border: "2px solid",
                       borderColor: isSelected ? gw.color : "divider",
@@ -457,49 +457,48 @@ export default function DepositPage() {
                     </Typography>
 
                     {/* Contact channels */}
-                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, mb: 2 }}>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
                       {CONTACT_CHANNELS.map((ch) => (
                         <Box
                           key={ch.label}
                           component="a"
                           href={ch.label === "Email" ? `mailto:${ch.value}` : "#"}
                           sx={{
-                            display: "flex",
-                            flexDirection: "column",
+                            display: "inline-flex",
                             alignItems: "center",
-                            gap: 0.75,
-                            p: { xs: 1.25, sm: 1.5 },
-                            borderRadius: "12px",
+                            gap: 1,
+                            px: 2,
+                            py: 1,
+                            borderRadius: "9px",
                             bgcolor: "background.paper",
                             border: "1px solid",
-                            borderColor: alpha(ch.color, 0.2),
+                            borderColor: alpha(ch.color, 0.25),
                             textDecoration: "none",
-                            transition: "all 180ms ease",
+                            transition: "all 150ms ease",
                             "&:hover": {
                               borderColor: ch.color,
-                              boxShadow: `0 2px 10px ${alpha(ch.color, 0.15)}`,
-                              transform: "translateY(-1px)",
+                              boxShadow: `0 2px 8px ${alpha(ch.color, 0.15)}`,
                             },
                           }}
                         >
                           <Box
                             sx={{
-                              width: { xs: 32, sm: 36 },
-                              height: { xs: 32, sm: 36 },
-                              borderRadius: "99px",
+                              width: 28,
+                              height: 28,
+                              borderRadius: "8px",
                               bgcolor: ch.color,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              boxShadow: `0 2px 8px ${alpha(ch.color, 0.3)}`,
-                              transition: "transform 150ms ease",
-                              "&:hover": { transform: "scale(1.08)" },
+                              flexShrink: 0,
                             }}
                           >
                             {ch.icon}
                           </Box>
-                          <Typography sx={{ fontSize: "11px", fontWeight: 700, color: ch.color }}>{ch.label}</Typography>
-                          <Typography sx={{ fontSize: "10px", color: "text.disabled", textAlign: "center", wordBreak: "break-all" }}>{ch.value}</Typography>
+                          <Box>
+                            <Typography sx={{ fontSize: "12px", fontWeight: 700, color: ch.color, lineHeight: 1.2 }}>{ch.label}</Typography>
+                            <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.2 }}>{ch.value}</Typography>
+                          </Box>
                         </Box>
                       ))}
                     </Box>
@@ -580,7 +579,7 @@ export default function DepositPage() {
                       type="button"
                       onClick={() => setAmount(qa)}
                       sx={{
-                        px: 1.25, py: 0.5,
+                        px: 2.5, py: 1.25,
                         borderRadius: "8px",
                         border: "1px solid",
                         borderColor: amount === qa ? gateway.color : "divider",
@@ -598,25 +597,46 @@ export default function DepositPage() {
                 {/* Kết quả tạo yêu cầu */}
                 {intentError && <Alert severity="error" sx={{ mt: 2 }}>{intentError}</Alert>}
                 {createdIntent && (
-                  <Alert severity="success" sx={{ mt: 2 }}>
-                    Đã tạo yêu cầu nạp <b>{formatVND(createdIntent.amount)}</b> qua <b>{gateway.name}</b>.
-                    {createdIntent.redirectUrl ? (
-                      <>
-                        {" "}
-                        <Box
-                          component="a"
-                          href={createdIntent.redirectUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{ color: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 0.5 }}
-                        >
-                          Mở trang thanh toán <ExternalLink size={12} />
-                        </Box>
-                      </>
-                    ) : (
-                      " Theo dõi trạng thái ở tab Lịch Sử."
+                  <Box sx={{ mt: 2, borderRadius: "12px", border: "1px solid", borderColor: alpha("#059669", 0.2), bgcolor: alpha("#059669", 0.04), p: 2 }}>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "#059669", mb: 0.75 }}>
+                      Đã tạo yêu cầu nạp {formatVND(createdIntent.amount)} qua {gateway.name}
+                    </Typography>
+
+                    {/* QR code nếu gateway trả về (VNPay QR, MoMo QR…) */}
+                    {createdIntent.qrCode && typeof createdIntent.qrCode === "string" && (
+                      <Box sx={{ mb: 1.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+                        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Quét mã QR để thanh toán:</Typography>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={createdIntent.qrCode} alt="QR thanh toán" style={{ width: 180, height: 180, borderRadius: 8, border: "1px solid #E2E8F0" }} />
+                      </Box>
                     )}
-                  </Alert>
+
+                    {/* Redirect link */}
+                    {createdIntent.redirectUrl && typeof createdIntent.redirectUrl === "string" && (
+                      <Box
+                        component="a"
+                        href={createdIntent.redirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "12px", fontWeight: 700, color: "#059669", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+                      >
+                        Mở trang thanh toán <ExternalLink size={12} />
+                      </Box>
+                    )}
+
+                    {!createdIntent.redirectUrl && !createdIntent.qrCode && (
+                      <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>
+                        Theo dõi trạng thái ở tab Lịch Sử.
+                      </Typography>
+                    )}
+
+                    {/* Thời gian hết hạn */}
+                    {createdIntent.expiresAt && (
+                      <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 0.75 }}>
+                        Hết hạn lúc: {new Date(createdIntent.expiresAt).toLocaleString("vi-VN")}
+                      </Typography>
+                    )}
+                  </Box>
                 )}
 
                 {/* Info note */}
@@ -641,44 +661,42 @@ export default function DepositPage() {
             )}
 
             {/* CTA button */}
-            <Box sx={{ mt: 2.5 }}>
-              <Box
-                component="button"
-                disabled={gateway.isAdmin || creating}
-                onClick={() => void handleCreateIntent()}
-                sx={{
-                  width: "100%",
-                  py: 1.375,
-                  borderRadius: "12px",
-                  border: "none",
-                  background: "#2563EB",
-                  color: "white",
-                  fontSize: { xs: "13px", sm: "14px" },
-                  fontWeight: 700,
-                  cursor: gateway.isAdmin ? "default" : "pointer",
-                  opacity: gateway.isAdmin || creating ? 0.6 : 1,
-                  boxShadow: "0 2px 10px rgba(37,99,235,0.25)",
-                  transition: "all 200ms ease",
-                  "&:not(:disabled):hover": {
-                    opacity: 0.92,
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 6px 18px rgba(37,99,235,0.35)",
-                  },
-                  "&:active": { transform: "scale(0.99)" },
-                }}
-              >
-                {gateway.isAdmin
-                  ? "Vui lòng liên hệ Admin"
-                  : creating
-                  ? "Đang tạo yêu cầu..."
-                  : `Xác nhận nạp ${formatVND(amount || 0)} qua ${gateway.name}`}
+            {!gateway.isAdmin && (
+              <Box sx={{ mt: 2.5 }}>
+                <Box
+                  component="button"
+                  disabled={creating}
+                  onClick={() => void handleCreateIntent()}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 2.5,
+                    py: 1.25,
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "#2563EB",
+                    color: "white",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    opacity: creating ? 0.6 : 1,
+                    boxShadow: "0 2px 10px rgba(37,99,235,0.25)",
+                    transition: "all 200ms ease",
+                    "&:not(:disabled):hover": {
+                      opacity: 0.92,
+                      transform: "translateY(-1px)",
+                    },
+                    "&:active": { transform: "scale(0.99)" },
+                  }}
+                >
+                  {creating ? "Đang tạo yêu cầu..." : `Xác nhận nạp ${formatVND(amount || 0)} qua ${gateway.name}`}
+                </Box>
+                <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 1 }}>
+                  Hệ thống sẽ tạo yêu cầu thanh toán và chuyển bạn tới cổng thanh toán
+                </Typography>
               </Box>
-              <Typography sx={{ fontSize: "11px", color: "text.disabled", textAlign: "center", mt: 1 }}>
-                {gateway.isAdmin
-                  ? "Nhắn tin cho Admin để được hỗ trợ nạp tiền"
-                  : "Hệ thống sẽ tạo yêu cầu thanh toán và chuyển bạn tới cổng thanh toán"}
-              </Typography>
-            </Box>
+            )}
           </Box>
         </Box>
       )}
@@ -750,8 +768,13 @@ export default function DepositPage() {
                         {display?.name ?? tx.gateway}
                       </Typography>
                       <Typography sx={{ fontSize: "11px", color: "text.disabled" }}>
-                        {tx.id.slice(0, 8).toUpperCase()}
-                        {tx.createdAt ? ` · ${new Date(tx.createdAt).toLocaleString("vi-VN")}` : ""}
+                        {tx.externalId ? tx.externalId.slice(0, 12) : tx.id.slice(0, 8).toUpperCase()}
+                        {" · "}
+                        {tx.paidAt
+                          ? `Đã thanh toán ${new Date(tx.paidAt).toLocaleString("vi-VN")}`
+                          : tx.status === "PENDING" && tx.expiresAt
+                          ? `Hết hạn ${new Date(tx.expiresAt).toLocaleString("vi-VN")}`
+                          : new Date(tx.createdAt).toLocaleString("vi-VN")}
                       </Typography>
                     </Box>
 

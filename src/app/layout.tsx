@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SocialMedia.vn — Bảng Điều Khiển",
+  title: "SignalGit — Bảng Điều Khiển",
   description: "Bảng điều khiển quản lý dịch vụ mạng xã hội",
 };
 
