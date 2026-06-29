@@ -3,6 +3,7 @@
 import { Box, Typography, alpha } from "@mui/material";
 import { Webhook, Copy, Check, ChevronDown, ChevronRight, Key } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 // ── Types ─────────────────────────────────────────────────
@@ -10,16 +11,17 @@ interface Field {
   name: string;
   type: string;
   required?: boolean;
-  desc: string;
+  descKey: string;
+  descParams?: Record<string, string>;
 }
 interface ResponseField {
   name: string;
   type: string;
-  desc: string;
+  descKey: string;
 }
 interface Endpoint {
   action: string;
-  desc: string;
+  descKey: string;
   requestFields: Field[];
   responseFields: ResponseField[];
   example: { req: Record<string, unknown>; res: unknown };
@@ -33,24 +35,24 @@ const BASE_URL = "https://api.yourdomain.com/api/v2";
 const ENDPOINTS: Endpoint[] = [
   {
     action: "services",
-    desc: "Lấy danh sách tất cả dịch vụ đang hoạt động.",
+    descKey: "descServices",
     badge: "GET-like",
     badgeColor: "#059669",
     requestFields: [
-      { name: "key",    type: "string", required: true,  desc: "API key của tài khoản" },
-      { name: "action", type: "string", required: true,  desc: 'Giá trị cố định: "services"' },
+      { name: "key",    type: "string", required: true,  descKey: "fApiKey" },
+      { name: "action", type: "string", required: true,  descKey: "fActionFixed", descParams: { action: "services" } },
     ],
     responseFields: [
-      { name: "service",  type: "number",  desc: "ID dịch vụ (publicId)" },
-      { name: "name",     type: "string",  desc: "Tên dịch vụ" },
-      { name: "type",     type: "string",  desc: "Loại dịch vụ (Default, Custom Comments, Drip-feed…)" },
-      { name: "category", type: "string",  desc: "Tên danh mục" },
-      { name: "rate",     type: "string",  desc: "Giá trên 1.000 đơn vị (VNĐ)" },
-      { name: "min",      type: "string",  desc: "Số lượng tối thiểu" },
-      { name: "max",      type: "string",  desc: "Số lượng tối đa" },
-      { name: "dripfeed", type: "boolean", desc: "Hỗ trợ nhỏ giọt" },
-      { name: "refill",   type: "boolean", desc: "Hỗ trợ bảo hành (refill)" },
-      { name: "cancel",   type: "boolean", desc: "Hỗ trợ hủy đơn" },
+      { name: "service",  type: "number",  descKey: "fServiceId" },
+      { name: "name",     type: "string",  descKey: "fServiceName" },
+      { name: "type",     type: "string",  descKey: "fServiceType" },
+      { name: "category", type: "string",  descKey: "fCategory" },
+      { name: "rate",     type: "string",  descKey: "fRate" },
+      { name: "min",      type: "string",  descKey: "fMin" },
+      { name: "max",      type: "string",  descKey: "fMax" },
+      { name: "dripfeed", type: "boolean", descKey: "fDripfeed" },
+      { name: "refill",   type: "boolean", descKey: "fRefill" },
+      { name: "cancel",   type: "boolean", descKey: "fCancel" },
     ],
     example: {
       req: { key: "sk-xxx", action: "services" },
@@ -61,22 +63,22 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "add",
-    desc: "Tạo đơn hàng mới.",
+    descKey: "descAdd",
     badge: "POST",
     badgeColor: "#2563EB",
     requestFields: [
-      { name: "key",      type: "string",        required: true,  desc: "API key của tài khoản" },
-      { name: "action",   type: "string",        required: true,  desc: 'Giá trị cố định: "add"' },
-      { name: "service",  type: "number",        required: true,  desc: "ID dịch vụ (lấy từ action services)" },
-      { name: "link",     type: "string",        required: true,  desc: "URL đối tượng cần tăng tương tác" },
-      { name: "quantity", type: "number",        required: false, desc: "Số lượng (bắt buộc nếu không dùng comments)" },
-      { name: "comments", type: "string",        required: false, desc: "Danh sách comment, mỗi dòng 1 comment (Custom Comments)" },
-      { name: "usernames",type: "string",        required: false, desc: "Danh sách username (Mentions)" },
-      { name: "runs",     type: "number",        required: false, desc: "Số lần chạy (Drip-feed)" },
-      { name: "interval", type: "number",        required: false, desc: "Khoảng cách giữa các lần chạy theo phút (Drip-feed)" },
+      { name: "key",      type: "string",        required: true,  descKey: "fApiKey" },
+      { name: "action",   type: "string",        required: true,  descKey: "fActionFixed", descParams: { action: "add" } },
+      { name: "service",  type: "number",        required: true,  descKey: "fServiceIdFrom" },
+      { name: "link",     type: "string",        required: true,  descKey: "fLink" },
+      { name: "quantity", type: "number",        required: false, descKey: "fQuantity" },
+      { name: "comments", type: "string",        required: false, descKey: "fComments" },
+      { name: "usernames",type: "string",        required: false, descKey: "fUsernames" },
+      { name: "runs",     type: "number",        required: false, descKey: "fRuns" },
+      { name: "interval", type: "number",        required: false, descKey: "fInterval" },
     ],
     responseFields: [
-      { name: "order", type: "number", desc: "Mã đơn hàng (orderNumber)" },
+      { name: "order", type: "number", descKey: "fOrderNumber" },
     ],
     example: {
       req: { key: "sk-xxx", action: "add", service: 1, link: "https://facebook.com/post/123", quantity: 1000 },
@@ -85,21 +87,21 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "status",
-    desc: "Kiểm tra trạng thái 1 hoặc nhiều đơn hàng.",
+    descKey: "descStatus",
     badge: "GET-like",
     badgeColor: "#059669",
     requestFields: [
-      { name: "key",    type: "string",        required: true,  desc: "API key của tài khoản" },
-      { name: "action", type: "string",        required: true,  desc: 'Giá trị cố định: "status"' },
-      { name: "order",  type: "number",        required: false, desc: "Mã đơn hàng (dùng 1 trong 2: order hoặc orders)" },
-      { name: "orders", type: "string",        required: false, desc: 'Nhiều mã, cách nhau bằng dấu phẩy. VD: "1,2,3"' },
+      { name: "key",    type: "string",        required: true,  descKey: "fApiKey" },
+      { name: "action", type: "string",        required: true,  descKey: "fActionFixed", descParams: { action: "status" } },
+      { name: "order",  type: "number",        required: false, descKey: "fOrderOneOfTwo" },
+      { name: "orders", type: "string",        required: false, descKey: "fOrdersComma" },
     ],
     responseFields: [
-      { name: "charge",      type: "string", desc: "Tổng chi phí đơn hàng" },
-      { name: "start_count", type: "string", desc: "Số lượng ban đầu" },
-      { name: "status",      type: "string", desc: "Trạng thái: Pending | Processing | In progress | Completed | Partial | Canceled" },
-      { name: "remains",     type: "string", desc: "Số lượng còn lại" },
-      { name: "currency",    type: "string", desc: "Đơn vị tiền tệ" },
+      { name: "charge",      type: "string", descKey: "fCharge" },
+      { name: "start_count", type: "string", descKey: "fStartCount" },
+      { name: "status",      type: "string", descKey: "fStatusList" },
+      { name: "remains",     type: "string", descKey: "fRemains" },
+      { name: "currency",    type: "string", descKey: "fCurrency" },
     ],
     example: {
       req: { key: "sk-xxx", action: "status", order: 42 },
@@ -108,17 +110,17 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "refill",
-    desc: "Yêu cầu bảo hành (refill) cho 1 hoặc nhiều đơn hàng.",
+    descKey: "descRefill",
     badge: "POST",
     badgeColor: "#2563EB",
     requestFields: [
-      { name: "key",    type: "string",        required: true,  desc: "API key của tài khoản" },
-      { name: "action", type: "string",        required: true,  desc: 'Giá trị cố định: "refill"' },
-      { name: "order",  type: "number",        required: false, desc: "Mã đơn hàng (1 trong 2)" },
-      { name: "orders", type: "string",        required: false, desc: 'Nhiều mã, cách nhau bằng dấu phẩy' },
+      { name: "key",    type: "string",        required: true,  descKey: "fApiKey" },
+      { name: "action", type: "string",        required: true,  descKey: "fActionFixed", descParams: { action: "refill" } },
+      { name: "order",  type: "number",        required: false, descKey: "fOrderOneOfTwoShort" },
+      { name: "orders", type: "string",        required: false, descKey: "fOrdersCommaShort" },
     ],
     responseFields: [
-      { name: "refill", type: "number | object", desc: "ID refill, hoặc object lỗi nếu thất bại" },
+      { name: "refill", type: "number | object", descKey: "fRefillIdOrError" },
     ],
     example: {
       req: { key: "sk-xxx", action: "refill", order: 42 },
@@ -127,16 +129,16 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "refill_status",
-    desc: "Kiểm tra trạng thái yêu cầu bảo hành.",
+    descKey: "descRefillStatus",
     badge: "GET-like",
     badgeColor: "#059669",
     requestFields: [
-      { name: "key",    type: "string", required: true, desc: "API key của tài khoản" },
-      { name: "action", type: "string", required: true, desc: 'Giá trị cố định: "refill_status"' },
-      { name: "refill", type: "number", required: true, desc: "ID refill (lấy từ action refill)" },
+      { name: "key",    type: "string", required: true, descKey: "fApiKey" },
+      { name: "action", type: "string", required: true, descKey: "fActionFixed", descParams: { action: "refill_status" } },
+      { name: "refill", type: "number", required: true, descKey: "fRefillId" },
     ],
     responseFields: [
-      { name: "status", type: "string", desc: "Trạng thái của yêu cầu refill" },
+      { name: "status", type: "string", descKey: "fRefillStatus" },
     ],
     example: {
       req: { key: "sk-xxx", action: "refill_status", refill: 7 },
@@ -145,18 +147,18 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "cancel",
-    desc: "Hủy 1 hoặc nhiều đơn hàng (chỉ khả dụng với dịch vụ hỗ trợ hủy).",
+    descKey: "descCancel",
     badge: "POST",
     badgeColor: "#2563EB",
     requestFields: [
-      { name: "key",    type: "string",        required: true,  desc: "API key của tài khoản" },
-      { name: "action", type: "string",        required: true,  desc: 'Giá trị cố định: "cancel"' },
-      { name: "order",  type: "number",        required: false, desc: "Mã đơn hàng (1 trong 2)" },
-      { name: "orders", type: "string",        required: false, desc: 'Nhiều mã, cách nhau bằng dấu phẩy' },
+      { name: "key",    type: "string",        required: true,  descKey: "fApiKey" },
+      { name: "action", type: "string",        required: true,  descKey: "fActionFixed", descParams: { action: "cancel" } },
+      { name: "order",  type: "number",        required: false, descKey: "fOrderOneOfTwoShort" },
+      { name: "orders", type: "string",        required: false, descKey: "fOrdersCommaShort" },
     ],
     responseFields: [
-      { name: "order",  type: "number", desc: "Mã đơn hàng" },
-      { name: "cancel", type: "string | object", desc: "Chuỗi rỗng nếu thành công, hoặc object lỗi" },
+      { name: "order",  type: "number", descKey: "fOrderNumberShort" },
+      { name: "cancel", type: "string | object", descKey: "fCancelResult" },
     ],
     example: {
       req: { key: "sk-xxx", action: "cancel", order: 42 },
@@ -165,16 +167,16 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     action: "balance",
-    desc: "Kiểm tra số dư tài khoản.",
+    descKey: "descBalance",
     badge: "GET-like",
     badgeColor: "#059669",
     requestFields: [
-      { name: "key",    type: "string", required: true, desc: "API key của tài khoản" },
-      { name: "action", type: "string", required: true, desc: 'Giá trị cố định: "balance"' },
+      { name: "key",    type: "string", required: true, descKey: "fApiKey" },
+      { name: "action", type: "string", required: true, descKey: "fActionFixed", descParams: { action: "balance" } },
     ],
     responseFields: [
-      { name: "balance",  type: "string", desc: "Số dư tài khoản (decimal string)" },
-      { name: "currency", type: "string", desc: "Đơn vị tiền tệ (VND)" },
+      { name: "balance",  type: "string", descKey: "fBalance" },
+      { name: "currency", type: "string", descKey: "fCurrencyVnd" },
     ],
     example: {
       req: { key: "sk-xxx", action: "balance" },
@@ -185,6 +187,7 @@ const ENDPOINTS: Endpoint[] = [
 
 // ── Copy button ───────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
+  const t = useTranslations("apiDocs");
   const [copied, setCopied] = useState(false);
   function handleCopy() {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -192,9 +195,9 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <Box component="button" onClick={handleCopy} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.375, borderRadius: "6px", border: "1px solid", borderColor: copied ? alpha("#059669", 0.3) : "divider", bgcolor: copied ? alpha("#059669", 0.06) : alpha("#0F172A", 0.04), color: copied ? "#059669" : "text.disabled", fontSize: "11px", fontWeight: 600, cursor: "pointer", transition: "all 150ms ease" }}>
+    <Box component="button" onClick={handleCopy} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.375, borderRadius: "6px", border: "1px solid", borderColor: copied ? alpha("#059669", 0.3) : "divider", bgcolor: copied ? alpha("#059669", 0.06) : "surface.subtle", color: copied ? "#059669" : "text.disabled", fontSize: "11px", fontWeight: 600, cursor: "pointer", transition: "all 150ms ease" }}>
       {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? "Đã sao chép" : "Copy"}
+      {copied ? t("copied") : t("copy")}
     </Box>
   );
 }
@@ -216,10 +219,11 @@ function CodeBlock({ json }: { json: unknown }) {
 
 // ── Field table ───────────────────────────────────────────
 function FieldTable({ fields }: { fields: Field[] | ResponseField[] }) {
+  const t = useTranslations("apiDocs");
   return (
     <Box sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
-      <Box sx={{ display: "grid", gridTemplateColumns: "140px 90px 1fr", px: 2, py: 1, bgcolor: alpha("#0F172A", 0.03), borderBottom: "1px solid", borderColor: "divider" }}>
-        {["Tham số", "Kiểu", "Mô tả"].map((h) => (
+      <Box sx={{ display: "grid", gridTemplateColumns: "140px 90px 1fr", px: 2, py: 1, bgcolor: "surface.subtle", borderBottom: "1px solid", borderColor: "divider" }}>
+        {[t("colParam"), t("colType"), t("colDesc")].map((h) => (
           <Typography key={h} sx={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.disabled" }}>{h}</Typography>
         ))}
       </Box>
@@ -232,7 +236,7 @@ function FieldTable({ fields }: { fields: Field[] | ResponseField[] }) {
             )}
           </Box>
           <Typography sx={{ fontSize: "11px", color: "#7C3AED", fontFamily: "monospace" }}>{f.type}</Typography>
-          <Typography sx={{ fontSize: "12px", color: "text.secondary", lineHeight: 1.5 }}>{f.desc}</Typography>
+          <Typography sx={{ fontSize: "12px", color: "text.secondary", lineHeight: 1.5 }}>{t(f.descKey, "descParams" in f && f.descParams ? f.descParams : undefined)}</Typography>
         </Box>
       ))}
     </Box>
@@ -241,43 +245,44 @@ function FieldTable({ fields }: { fields: Field[] | ResponseField[] }) {
 
 // ── Endpoint card ─────────────────────────────────────────
 function EndpointCard({ ep, open, onToggle }: { ep: Endpoint; open: boolean; onToggle: () => void }) {
+  const t = useTranslations("apiDocs");
   return (
     <Box sx={{ borderRadius: "14px", border: "1px solid", borderColor: open ? alpha("#2563EB", 0.25) : "divider", bgcolor: "background.paper", overflow: "hidden", transition: "border-color 200ms ease" }}>
       {/* Header */}
-      <Box component="button" onClick={onToggle} sx={{ width: "100%", display: "flex", alignItems: "center", gap: 2, px: 2.5, py: 2, border: "none", bgcolor: "transparent", cursor: "pointer", textAlign: "left", transition: "bgcolor 150ms ease", "&:hover": { bgcolor: alpha("#0F172A", 0.02) } }}>
+      <Box component="button" onClick={onToggle} sx={{ width: "100%", display: "flex", alignItems: "center", gap: 2, px: 2.5, py: 2, border: "none", bgcolor: "transparent", cursor: "pointer", textAlign: "left", transition: "bgcolor 150ms ease", "&:hover": { bgcolor: "action.hover" } }}>
         <Box component="span" sx={{ px: 1.25, py: 0.25, borderRadius: "6px", bgcolor: alpha(ep.badgeColor ?? "#2563EB", 0.1), color: ep.badgeColor ?? "#2563EB", fontSize: "10px", fontWeight: 800, fontFamily: "monospace", flexShrink: 0 }}>
           {ep.badge ?? "POST"}
         </Box>
         <Box component="code" sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", fontFamily: "monospace", flex: 1 }}>
           action: &quot;{ep.action}&quot;
         </Box>
-        <Typography sx={{ fontSize: "12px", color: "text.secondary", flex: 1, display: { xs: "none", sm: "block" } }}>{ep.desc}</Typography>
+        <Typography sx={{ fontSize: "12px", color: "text.secondary", flex: 1, display: { xs: "none", sm: "block" } }}>{t(ep.descKey)}</Typography>
         {open ? <ChevronDown size={16} color="#94A3B8" /> : <ChevronRight size={16} color="#94A3B8" />}
       </Box>
 
       {/* Body */}
       {open && (
         <Box sx={{ px: 2.5, pb: 2.5, borderTop: "1px solid", borderColor: "divider" }}>
-          <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 2, mb: 2, lineHeight: 1.6 }}>{ep.desc}</Typography>
+          <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 2, mb: 2, lineHeight: 1.6 }}>{t(ep.descKey)}</Typography>
 
-          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>Tham số yêu cầu</Typography>
+          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>{t("requestParams")}</Typography>
           <Box sx={{ mb: 2.5 }}>
             <FieldTable fields={ep.requestFields} />
           </Box>
 
-          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>Phản hồi</Typography>
+          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>{t("response")}</Typography>
           <Box sx={{ mb: 2.5 }}>
             <FieldTable fields={ep.responseFields} />
           </Box>
 
-          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>Ví dụ</Typography>
+          <Typography sx={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "text.disabled", mb: 1 }}>{t("example")}</Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5 }}>
             <Box>
-              <Typography sx={{ fontSize: "11px", color: "text.disabled", mb: 0.75 }}>Request body</Typography>
+              <Typography sx={{ fontSize: "11px", color: "text.disabled", mb: 0.75 }}>{t("requestBody")}</Typography>
               <CodeBlock json={ep.example.req} />
             </Box>
             <Box>
-              <Typography sx={{ fontSize: "11px", color: "text.disabled", mb: 0.75 }}>Response</Typography>
+              <Typography sx={{ fontSize: "11px", color: "text.disabled", mb: 0.75 }}>{t("responseLabel")}</Typography>
               <CodeBlock json={ep.example.res} />
             </Box>
           </Box>
@@ -288,14 +293,15 @@ function EndpointCard({ ep, open, onToggle }: { ep: Endpoint; open: boolean; onT
 }
 
 // ── Nav items ─────────────────────────────────────────────
-const NAV_ITEMS = [
-  { id: "auth",   label: "Authentication", icon: <Key size={13} /> },
+const NAV_ITEMS: { id: string; label: string; labelKey?: string; icon: React.ReactNode }[] = [
+  { id: "auth",   label: "Authentication", labelKey: "authNavLabel", icon: <Key size={13} /> },
   ...ENDPOINTS.map((ep) => ({ id: `action-${ep.action}`, label: ep.action, icon: <Box component="span" sx={{ fontSize: "10px", fontFamily: "monospace", fontWeight: 800 }}>{"{}"}</Box> })),
-  { id: "errors", label: "Error Responses", icon: <Box component="span" sx={{ fontSize: "11px" }}>⊘</Box> },
+  { id: "errors", label: "Error Responses", labelKey: "errorsNavLabel", icon: <Box component="span" sx={{ fontSize: "11px" }}>⊘</Box> },
 ];
 
 // ── Page ──────────────────────────────────────────────────
 export default function ApiDocsPage() {
+  const t = useTranslations("apiDocs");
   const [openAction, setOpenAction] = useState<string | null>(null);
   const [activeNav, setActiveNav]   = useState<string>("auth");
   const pendingScrollId = useRef<string | null>(null);
@@ -357,7 +363,7 @@ export default function ApiDocsPage() {
         }}
       >
         <Typography sx={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "text.disabled", px: 1.75, pb: 0.75 }}>
-          TRÊN TRANG NÀY
+          {t("onThisPage")}
         </Typography>
 
         {NAV_ITEMS.map((item) => {
@@ -392,14 +398,14 @@ export default function ApiDocsPage() {
               }}
             >
               <Box sx={{ flexShrink: 0, opacity: 0.6, display: "flex", alignItems: "center" }}>{item.icon}</Box>
-              {item.label}
+              {item.labelKey ? t(item.labelKey) : item.label}
             </Box>
           );
         })}
 
         <Box sx={{ mx: 1.75, mt: 1, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
           <Typography sx={{ fontSize: "10px", color: "text.disabled", lineHeight: 1.5 }}>
-            💡 Click vào action để mở chi tiết trực tiếp.
+            {t("navHint")}
           </Typography>
         </Box>
       </Box>
@@ -407,7 +413,7 @@ export default function ApiDocsPage() {
       {/* ── Main content ── */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {/* Hero */}
-        <Box sx={{ position: "relative", overflow: "hidden", borderRadius: "18px", border: "1px solid", borderColor: alpha("#2563EB", 0.2), background: "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)", px: { xs: 2.5, sm: 3 }, py: { xs: 2.5, sm: 3.5 }, mb: 3 }}>
+        <Box sx={{ position: "relative", overflow: "hidden", borderRadius: "18px", border: "1px solid", borderColor: alpha("#2563EB", 0.2), background: (t) => t.palette.mode === "dark" ? "linear-gradient(135deg, #0F1B2D 0%, #111827 100%)" : "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)", px: { xs: 2.5, sm: 3 }, py: { xs: 2.5, sm: 3.5 }, mb: 3 }}>
           <Box sx={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(37,99,235,0.12)", pointerEvents: "none" }} />
           <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 130, height: 130, borderRadius: "50%", background: "rgba(14,165,233,0.1)", pointerEvents: "none" }} />
           <Box sx={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 2 }}>
@@ -419,10 +425,10 @@ export default function ApiDocsPage() {
             </Box>
             <Box>
               <Typography sx={{ fontSize: { xs: "20px", sm: "26px" }, fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                Tài Liệu API v2
+                {t("heroTitle")}
               </Typography>
               <Typography sx={{ fontSize: "13px", color: "text.secondary", mt: 0.5, lineHeight: 1.6, maxWidth: 560 }}>
-                API dạng POST duy nhất — tất cả actions gửi về <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: alpha("#0F172A", 0.06), px: 0.75, py: 0.125, borderRadius: "4px" }}>POST {BASE_URL}</Box> với body JSON, phân biệt nhau bằng trường <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: alpha("#0F172A", 0.06), px: 0.75, py: 0.125, borderRadius: "4px" }}>action</Box>.
+                {t("heroSubtitlePrefix")} <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: "surface.subtle", px: 0.75, py: 0.125, borderRadius: "4px" }}>POST {BASE_URL}</Box> {t("heroSubtitleMiddle")} <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: "surface.subtle", px: 0.75, py: 0.125, borderRadius: "4px" }}>action</Box>.
               </Typography>
             </Box>
           </Box>
@@ -431,7 +437,7 @@ export default function ApiDocsPage() {
         {/* Base URL */}
         <Box sx={{ borderRadius: "12px", border: "1px solid", borderColor: alpha("#2563EB", 0.2), bgcolor: alpha("#2563EB", 0.03), px: 2, py: 1.5, mb: 3, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
           <Box>
-            <Typography sx={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.disabled", mb: 0.5 }}>Endpoint</Typography>
+            <Typography sx={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.disabled", mb: 0.5 }}>{t("endpointLabel")}</Typography>
             <Typography sx={{ fontSize: "13px", fontFamily: "monospace", fontWeight: 700, color: "#2563EB" }}>{BASE_URL}</Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -444,11 +450,11 @@ export default function ApiDocsPage() {
         <Box id="auth" sx={{ scrollMarginTop: "76px", borderRadius: "14px", border: "1px solid", borderColor: alpha("#7C3AED", 0.2), bgcolor: alpha("#7C3AED", 0.02), p: 2.5, mb: 3 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <Key size={16} color="#7C3AED" />
-            <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>Xác thực (Authentication)</Typography>
+            <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>{t("authTitle")}</Typography>
           </Box>
           <Typography sx={{ fontSize: "13px", color: "text.secondary", lineHeight: 1.6, mb: 1.5 }}>
-            Mỗi request phải có trường <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: alpha("#0F172A", 0.06), px: 0.75, py: 0.125, borderRadius: "4px", color: "#7C3AED" }}>key</Box> là API key của tài khoản. API key được tạo và quản lý tại trang{" "}
-            <Box component={Link} href="/profile" sx={{ color: "#7C3AED", fontWeight: 600 }}>Hồ Sơ → Thông Tin</Box>.
+            {t("authDescPrefix")} <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: "surface.subtle", px: 0.75, py: 0.125, borderRadius: "4px", color: "#7C3AED" }}>key</Box> {t("authDescMiddle")}{" "}
+            <Box component={Link} href="/profile" sx={{ color: "#7C3AED", fontWeight: 600 }}>{t("authProfileLink")}</Box>.
           </Typography>
           <Box sx={{ borderRadius: "10px", bgcolor: "#0F172A", p: 2 }}>
             <Box component="pre" sx={{ m: 0, color: "#E2E8F0", fontSize: "12px", fontFamily: "monospace", lineHeight: 1.7 }}>
@@ -458,7 +464,7 @@ export default function ApiDocsPage() {
             </Box>
           </Box>
           <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 1.5 }}>
-            Lỗi xác thực trả về: <Box component="code" sx={{ fontFamily: "monospace", bgcolor: alpha("#DC2626", 0.07), color: "#DC2626", px: 0.5, py: 0.125, borderRadius: "4px", fontSize: "11px" }}>{`{"error": "Invalid API key"}`}</Box>
+            {t("authErrorPrefix")} <Box component="code" sx={{ fontFamily: "monospace", bgcolor: alpha("#DC2626", 0.07), color: "#DC2626", px: 0.5, py: 0.125, borderRadius: "4px", fontSize: "11px" }}>{`{"error": "Invalid API key"}`}</Box>
           </Typography>
         </Box>
 
@@ -473,13 +479,13 @@ export default function ApiDocsPage() {
 
         {/* Error format */}
         <Box id="errors" sx={{ scrollMarginTop: "76px", mt: 3, borderRadius: "14px", border: "1px solid", borderColor: alpha("#DC2626", 0.2), bgcolor: alpha("#DC2626", 0.02), p: 2.5 }}>
-          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary", mb: 1 }}>Xử lý lỗi</Typography>
+          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary", mb: 1 }}>{t("errorTitle")}</Typography>
           <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 1.5, lineHeight: 1.6 }}>
-            Khi có lỗi, API luôn trả về HTTP 200 với body chứa trường <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: alpha("#0F172A", 0.06), px: 0.75, py: 0.125, borderRadius: "4px" }}>error</Box>:
+            {t("errorDescPrefix")} <Box component="code" sx={{ fontFamily: "monospace", fontSize: "12px", bgcolor: "surface.subtle", px: 0.75, py: 0.125, borderRadius: "4px" }}>error</Box>:
           </Typography>
-          <CodeBlock json={{ error: "Mô tả lỗi (tiếng Anh)" }} />
+          <CodeBlock json={{ error: t("errorExampleDesc") }} />
           <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 1.5 }}>
-            Một số lỗi phổ biến: <em>Invalid API key</em> · <em>Incorrect order ID</em> · <em>service is invalid</em> · <em>Insufficient balance</em>
+            {t("commonErrors")} <em>Invalid API key</em> · <em>Incorrect order ID</em> · <em>service is invalid</em> · <em>Insufficient balance</em>
           </Typography>
         </Box>
       </Box>

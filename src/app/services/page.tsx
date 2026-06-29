@@ -4,6 +4,7 @@ import { Box, Typography, InputBase, alpha, CircularProgress, Alert } from "@mui
 import { Search, LayoutGrid, Layers, Zap, Shield } from "lucide-react";
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import PlatformCategory from "@/components/services/PlatformCategory";
 import { platformColors, FALLBACK_PLATFORM_COLOR } from "@/data/services";
 import { toUiService, useCatalog } from "@/hooks/useCatalog";
@@ -12,6 +13,7 @@ import type { PlatformCategory as PlatformCategoryType, PlatformId } from "@/typ
 const ALL = "all";
 
 function ServicesContent() {
+  const t = useTranslations("services");
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   // null = chưa chọn tay → lấy theo query param nếu hợp lệ
@@ -71,11 +73,11 @@ function ServicesContent() {
             <LayoutGrid size={19} color="#2563EB" />
           </Box>
           <Typography sx={{ fontSize: { xs: "20px", sm: "24px" }, fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em" }}>
-            Bảng Giá Dịch Vụ
+            {t("title")}
           </Typography>
         </Box>
         <Typography sx={{ fontSize: "13px", color: "text.secondary", ml: "52px" }}>
-          Tất cả dịch vụ tăng tương tác mạng xã hội
+          {t("subtitle")}
         </Typography>
       </Box>
 
@@ -86,7 +88,7 @@ function ServicesContent() {
             icon: <Layers size={22} color="#2563EB" />,
             iconBg: alpha("#2563EB", 0.1),
             value: loading ? "..." : String(totalServices),
-            label: "Tổng dịch vụ",
+            label: t("totalServices"),
             border: alpha("#2563EB", 0.15),
           },
           {
@@ -164,7 +166,7 @@ function ServicesContent() {
             borderRadius: "10px",
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: alpha("#F8FAFC", 0.8),
+            bgcolor: "surface.muted",
             transition: "all 150ms ease",
             "&:focus-within": {
               borderColor: alpha("#2563EB", 0.4),
@@ -175,7 +177,7 @@ function ServicesContent() {
         >
           <Search size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
           <InputBase
-            placeholder="Tìm kiếm dịch vụ hoặc ID..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{
@@ -218,7 +220,7 @@ function ServicesContent() {
               "&:hover": { borderColor: "primary.light", color: "primary.main" },
             }}
           >
-            Tất cả
+            {t("all")}
           </Box>
 
           {servicesData.map((cat) => {
@@ -254,7 +256,7 @@ function ServicesContent() {
         {filtered.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 8 }}>
             <Typography sx={{ fontSize: "14px", color: "text.secondary" }}>
-              Không tìm thấy dịch vụ phù hợp.
+              {t("noResults")}
             </Typography>
           </Box>
         ) : (
@@ -272,13 +274,13 @@ function ServicesContent() {
               display: "inline-flex", alignItems: "center", gap: 1,
               px: 2.5, py: 1,
               borderRadius: "99px",
-              background: "#F0F9FF",
+              background: (t) => t.palette.surface.hero,
               border: "1px solid",
               borderColor: alpha("#0EA5E9", 0.2),
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             }}
           >
-            <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Tổng dịch vụ:</Typography>
+            <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{t("totalServicesLabel")}</Typography>
             <Typography
               sx={{
                 fontSize: "14px", fontWeight: 800,

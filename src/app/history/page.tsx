@@ -3,6 +3,7 @@
 import { Box, Typography, alpha, InputBase, MenuItem, Select, CircularProgress, Alert } from "@mui/material";
 import { History, Download, RefreshCw, ArrowDown, ArrowUp, Star, RotateCcw, Search, SlidersHorizontal, CalendarDays, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { walletApi, ApiError } from "@/lib/api";
 import type { WalletTransaction, PaginatedMeta } from "@/lib/api/types";
@@ -16,6 +17,8 @@ interface DisplayTx {
   id: string;
   rawId: string;
   type: TxType;
+  backendType: string;
+  refType?: string;
   method: string;
   label: string;
   note: string;
@@ -58,6 +61,8 @@ function mapTx(tx: WalletTransaction): DisplayTx {
     id:           tx.id.slice(0, 8).toUpperCase(),
     rawId:        tx.id,
     type,
+    backendType:  tx.type,
+    refType:      tx.refType ?? undefined,
     method:       tx.refType === "order" ? "Đơn hàng" : tx.refType === "manual" ? "Thủ công" : "Hệ thống",
     label:        BACKEND_TYPE_LABEL[tx.type] ?? tx.type,
     note:         tx.note ?? "",
@@ -135,6 +140,7 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 
 // ── Page ──────────────────────────────────────────────────
 export default function HistoryPage() {
+  const t = useTranslations("history");
   const [dateRange, setDateRange]     = useState<DateRange>("all");
   const [typeFilter, setTypeFilter]   = useState<string>("all");
   const [search, setSearch]           = useState("");
@@ -153,19 +159,36 @@ export default function HistoryPage() {
       setMeta(res.meta);
       setPage(p);
     } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : "Không tải được lịch sử giao dịch.");
+      setLoadError(err instanceof ApiError ? err.message : t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { void fetchPage(1); }, [fetchPage]);
+
+  // Resolve display label/method per locale at render time
+  const methodLabel = useCallback((refType?: string) =>
+    refType === "order" ? t("methodOrder") : refType === "manual" ? t("methodManual") : t("methodSystem"),
+  [t]);
+  const typeLabelFor = useCallback((backendType: string) =>
+    BACKEND_TYPE_LABEL[backendType] ? t(`backendTypeLabel.${backendType}`) : backendType,
+  [t]);
+
+  const localizedTx = useMemo(
+    () => transactions.map((tx) => ({
+      ...tx,
+      label: typeLabelFor(tx.backendType),
+      method: methodLabel(tx.refType),
+    })),
+    [transactions, typeLabelFor, methodLabel],
+  );
 
   // Export CSV từ dữ liệu hiện tại
   function handleExportCsv() {
     const rows = [
-      ["Mã GD", "Loại", "Mô tả", "Ghi chú", "Phương thức", "Số tiền", "SD trước", "SD sau", "Trạng thái", "Ngày"],
-      ...transactions.map((tx) => [
+      [t("csvId"), t("csvType"), t("csvDesc"), t("csvNote"), t("csvMethod"), t("csvAmount"), t("csvBalanceBefore"), t("csvBalanceAfter"), t("csvStatus"), t("csvDate")],
+      ...localizedTx.map((tx) => [
         tx.id,
         tx.label,
         tx.label,
@@ -174,38 +197,38 @@ export default function HistoryPage() {
         (TYPE_CONFIG[tx.type].isCredit ? "+" : "-") + fmt(tx.amount),
         fmtBalance(tx.balanceBefore) ?? "",
         fmtBalance(tx.balanceAfter) ?? "",
-        STATUS_CONFIG[tx.status].label,
+        t(`statusLabel.${tx.status}`),
         fmtDate(tx.date),
       ]),
     ];
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     const a   = document.createElement("a");
-    a.href = url; a.download = `giao-dich-trang${page}.csv`; a.click();
+    a.href = url; a.download = t("csvFilename", { page }); a.click();
     URL.revokeObjectURL(url);
   }
 
   const filtered = useMemo(() => {
-    return transactions.filter((tx) => {
+    return localizedTx.filter((tx) => {
       if (!withinRange(tx.date, dateRange)) return false;
       if (typeFilter !== "all" && tx.type !== typeFilter) return false;
       if (search && !tx.id.toLowerCase().includes(search.toLowerCase()) && !tx.label.toLowerCase().includes(search.toLowerCase()) && !tx.note.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [transactions, dateRange, typeFilter, search]);
+  }, [localizedTx, dateRange, typeFilter, search]);
 
   // Stat totals từ trang hiện tại
-  const totalDeposit = transactions.filter(t => (t.type === "deposit" || t.type === "refund") && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalSpend   = transactions.filter(t => t.type === "spend"  && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalVip     = transactions.filter(t => t.type === "vip"    && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalRefund  = transactions.filter(t => t.type === "refund" && t.status === "success").reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalDeposit = transactions.filter(x => (x.type === "deposit" || x.type === "refund") && x.status === "success").reduce((s, x) => s + Math.abs(x.amount), 0);
+  const totalSpend   = transactions.filter(x => x.type === "spend"  && x.status === "success").reduce((s, x) => s + Math.abs(x.amount), 0);
+  const totalVip     = transactions.filter(x => x.type === "vip"    && x.status === "success").reduce((s, x) => s + Math.abs(x.amount), 0);
+  const totalRefund  = transactions.filter(x => x.type === "refund" && x.status === "success").reduce((s, x) => s + Math.abs(x.amount), 0);
 
   const totalPages = Math.max(1, Math.ceil(meta.total / PAGE_SIZE));
 
   return (
     <Box sx={{ width: "100%" }}>
       {/* ── Hero ── */}
-      <Box sx={{ position: "relative", overflow: "hidden", borderRadius: "18px", border: "1px solid", borderColor: alpha("#0EA5E9", 0.25), background: "#F0F9FF", px: { xs: 2.5, sm: 3 }, py: { xs: 2.5, sm: 3 }, mb: 3 }}>
+      <Box sx={{ position: "relative", overflow: "hidden", borderRadius: "18px", border: "1px solid", borderColor: alpha("#0EA5E9", 0.25), background: (t) => t.palette.surface.hero, px: { xs: 2.5, sm: 3 }, py: { xs: 2.5, sm: 3 }, mb: 3 }}>
         <Box sx={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(14,165,233,0.18)", pointerEvents: "none" }} />
         <Box sx={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(6,182,212,0.15)", pointerEvents: "none" }} />
 
@@ -219,12 +242,10 @@ export default function HistoryPage() {
             </Box>
             <Box>
               <Typography sx={{ fontSize: { xs: "18px", sm: "22px" }, fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                Lịch sử giao dịch
+                {t("title")}
               </Typography>
               <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-                Tổng{" "}
-                <Box component="span" sx={{ fontWeight: 700, color: "#0284C7" }}>{meta.total}</Box>
-                {" "}giao dịch · trang {page}/{totalPages}
+                {t("summary", { total: meta.total, page, totalPages })}
               </Typography>
             </Box>
           </Box>
@@ -232,11 +253,11 @@ export default function HistoryPage() {
           <Box sx={{ display: "flex", gap: 1 }}>
             <Box component="button" onClick={handleExportCsv} disabled={transactions.length === 0} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2, py: 1, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", color: "text.secondary", fontSize: "12px", fontWeight: 600, cursor: "pointer", opacity: transactions.length === 0 ? 0.5 : 1, transition: "all 150ms ease", "&:hover": { borderColor: "primary.main", color: "primary.main" } }}>
               <Download size={14} />
-              Xuất CSV
+              {t("exportCsv")}
             </Box>
             <Box component="button" onClick={() => void fetchPage(page)} disabled={loading} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2, py: 1, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", color: "text.secondary", fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 150ms ease", "&:hover": { borderColor: "primary.main", color: "primary.main" } }}>
               <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-              Làm mới
+              {t("refresh")}
             </Box>
           </Box>
         </Box>
@@ -244,10 +265,10 @@ export default function HistoryPage() {
 
       {/* ── Stat cards ── */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4,1fr)" }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>
-        <StatCard icon={<ArrowDown size={15} />} label="Nạp + thưởng" value={`${fmt(totalDeposit)} ₫`} color="#059669" />
-        <StatCard icon={<ArrowUp   size={15} />} label="Tổng đã chi"  value={`${fmt(totalSpend)} ₫`}   color="#DC2626" />
-        <StatCard icon={<Star      size={15} />} label="Mua VIP"      value={`${fmt(totalVip)} ₫`}     color="#0284C7" />
-        <StatCard icon={<RotateCcw size={15} />} label="Hoàn tiền"    value={`${fmt(totalRefund)} ₫`}  color="#0891B2" />
+        <StatCard icon={<ArrowDown size={15} />} label={t("statDeposit")} value={`${fmt(totalDeposit)} ₫`} color="#059669" />
+        <StatCard icon={<ArrowUp   size={15} />} label={t("statSpend")}  value={`${fmt(totalSpend)} ₫`}   color="#DC2626" />
+        <StatCard icon={<Star      size={15} />} label={t("statVip")}      value={`${fmt(totalVip)} ₫`}     color="#0284C7" />
+        <StatCard icon={<RotateCcw size={15} />} label={t("statRefund")}    value={`${fmt(totalRefund)} ₫`}  color="#0891B2" />
       </Box>
 
       {/* ── Filter bar ── */}
@@ -257,9 +278,10 @@ export default function HistoryPage() {
           <CalendarDays size={15} color="#0EA5E9" style={{ marginLeft: 4, flexShrink: 0 }} />
           {DATE_PILLS.map((pill) => {
             const active = dateRange === pill.key;
+            const pillLabel = pill.key === "today" ? t("datePillToday") : pill.key === "7d" ? t("datePill7d") : pill.key === "30d" ? t("datePill30d") : t("datePillAll");
             return (
               <Box key={pill.key} component="button" onClick={() => setDateRange(pill.key)} sx={{ px: 1.5, py: 0.625, borderRadius: "99px", border: "none", cursor: "pointer", fontSize: "11px", fontWeight: 600, transition: "all 150ms ease", background: active ? "#0EA5E9" : "transparent", color: active ? "white" : "text.secondary", boxShadow: active ? "0 1px 6px rgba(14,165,233,0.3)" : "none" }}>
-                {pill.label}
+                {pillLabel}
               </Box>
             );
           })}
@@ -267,25 +289,25 @@ export default function HistoryPage() {
 
         {/* Type dropdown */}
         <Select size="small" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} sx={{ height: 36, fontSize: "12px", fontWeight: 600, borderRadius: "99px", minWidth: 150, "& .MuiOutlinedInput-notchedOutline": { borderColor: alpha("#0EA5E9", 0.25) }, "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: alpha("#0EA5E9", 0.5) } }}>
-          <MenuItem value="all"     sx={{ fontSize: "12px" }}>Loại: Tất cả</MenuItem>
-          <MenuItem value="deposit" sx={{ fontSize: "12px" }}>Nạp tiền</MenuItem>
-          <MenuItem value="spend"   sx={{ fontSize: "12px" }}>Chi tiêu</MenuItem>
-          <MenuItem value="vip"     sx={{ fontSize: "12px" }}>Mua VIP</MenuItem>
-          <MenuItem value="refund"  sx={{ fontSize: "12px" }}>Hoàn tiền</MenuItem>
+          <MenuItem value="all"     sx={{ fontSize: "12px" }}>{t("typeAll")}</MenuItem>
+          <MenuItem value="deposit" sx={{ fontSize: "12px" }}>{t("typeDeposit")}</MenuItem>
+          <MenuItem value="spend"   sx={{ fontSize: "12px" }}>{t("typeSpend")}</MenuItem>
+          <MenuItem value="vip"     sx={{ fontSize: "12px" }}>{t("typeVip")}</MenuItem>
+          <MenuItem value="refund"  sx={{ fontSize: "12px" }}>{t("typeRefund")}</MenuItem>
         </Select>
 
         {/* Search */}
         <Box sx={{ ml: "auto", flex: 1, maxWidth: 320, minWidth: 180, position: "relative", display: "flex", alignItems: "center" }}>
           <Search size={16} color="#94A3B8" style={{ position: "absolute", left: 12, flexShrink: 0 }} />
           <InputBase
-            placeholder="Tìm theo mã giao dịch, mô tả..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{ width: "100%", pl: "36px", pr: search ? "70px" : "12px", height: 36, borderRadius: "99px", border: "1px solid", borderColor: alpha("#0EA5E9", 0.25), bgcolor: "background.paper", fontSize: "12px", transition: "all 150ms ease", "&:focus-within": { borderColor: alpha("#0EA5E9", 0.5), boxShadow: `0 0 0 3px ${alpha("#0EA5E9", 0.08)}` }, "& input": { p: 0 } }}
           />
           {search && (
             <Box component="button" onClick={() => setSearch("")} sx={{ position: "absolute", right: 6, px: 1.25, py: 0.375, borderRadius: "99px", border: "none", bgcolor: alpha("#0EA5E9", 0.1), color: "#0284C7", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
-              Xóa
+              {t("clear")}
             </Box>
           )}
         </Box>
@@ -300,27 +322,27 @@ export default function HistoryPage() {
         <Box sx={{ borderRadius: "16px", border: "2px dashed", borderColor: filtered.length === 0 ? alpha("#0EA5E9", 0.2) : "transparent", bgcolor: filtered.length === 0 ? alpha("#0EA5E9", 0.02) : "transparent", overflow: "hidden" }}>
           {filtered.length === 0 ? (
             <Box sx={{ py: 10, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <Box sx={{ width: 80, height: 80, borderRadius: "24px", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Box sx={{ width: 80, height: 80, borderRadius: "24px", background: (t) => t.palette.mode === "dark" ? alpha("#0EA5E9", 0.12) : "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <SlidersHorizontal size={38} color="#0EA5E9" />
               </Box>
               <Box>
                 <Typography sx={{ fontSize: "16px", fontWeight: 700, color: "text.primary", mb: 0.5 }}>
-                  Chưa có giao dịch nào
+                  {t("emptyTitle")}
                 </Typography>
                 <Typography sx={{ fontSize: "13px", color: "text.secondary", maxWidth: 320 }}>
-                  Khi bạn nạp tiền, đặt đơn hoặc mua VIP, các giao dịch sẽ hiện ra ở đây.
+                  {t("emptyDesc")}
                 </Typography>
               </Box>
               <Box component={Link} href="/deposit" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", background: "#0EA5E9", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none", boxShadow: "0 2px 10px rgba(14,165,233,0.3)", transition: "all 180ms ease", "&:hover": { opacity: 0.9, transform: "translateY(-1px)" } }}>
                 <Wallet size={16} />
-                Nạp tiền ngay
+                {t("depositNow")}
               </Box>
             </Box>
           ) : (
             <Box sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", overflow: "hidden" }}>
               {/* Table header */}
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr auto", sm: "1fr 120px 110px 150px" }, px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: "1px solid", borderColor: "divider", bgcolor: alpha("#0F172A", 0.02) }}>
-                {["Giao dịch", "Phương thức", "Trạng thái", "Số tiền / Số dư"].map((h, i) => (
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr auto", sm: "1fr 120px 110px 150px" }, px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: "1px solid", borderColor: "divider", bgcolor: "surface.subtle" }}>
+                {[t("colTransaction"), t("colMethod"), t("colStatus"), t("colAmount")].map((h, i) => (
                   <Typography key={h} sx={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "text.disabled", display: i > 1 ? { xs: "none", sm: "block" } : "block", textAlign: i === 3 ? "right" : "left" }}>
                     {h}
                   </Typography>
@@ -334,7 +356,7 @@ export default function HistoryPage() {
                 const balAfter = fmtBalance(tx.balanceAfter);
 
                 return (
-                  <Box key={tx.rawId} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr auto", sm: "1fr 120px 110px 150px" }, alignItems: "center", px: { xs: 2, sm: 2.5 }, py: { xs: 1.5, sm: 1.75 }, borderBottom: i < filtered.length - 1 ? "1px solid" : "none", borderColor: "divider", transition: "bgcolor 150ms ease", "&:hover": { bgcolor: alpha("#0F172A", 0.015) }, gap: { xs: 1, sm: 0 } }}>
+                  <Box key={tx.rawId} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr auto", sm: "1fr 120px 110px 150px" }, alignItems: "center", px: { xs: 2, sm: 2.5 }, py: { xs: 1.5, sm: 1.75 }, borderBottom: i < filtered.length - 1 ? "1px solid" : "none", borderColor: "divider", transition: "bgcolor 150ms ease", "&:hover": { bgcolor: "action.hover" }, gap: { xs: 1, sm: 0 } }}>
                     {/* Col 1: icon + label + note + id + date */}
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                       <Box sx={{ flexShrink: 0, width: { xs: 36, sm: 40 }, height: { xs: 36, sm: 40 }, borderRadius: "10px", bgcolor: tc.bg, display: "flex", alignItems: "center", justifyContent: "center", color: tc.color }}>
@@ -354,7 +376,7 @@ export default function HistoryPage() {
                           <Typography sx={{ fontSize: "10px", color: "text.disabled" }}>·</Typography>
                           <Typography sx={{ fontSize: "10px", color: "text.disabled" }}>{fmtDate(tx.date)}</Typography>
                           <Box component="span" sx={{ display: { xs: "inline-block", sm: "none" }, px: 0.875, py: 0.125, borderRadius: "99px", bgcolor: sc.bg, color: sc.color, fontSize: "9px", fontWeight: 700 }}>
-                            {sc.label}
+                            {t(`statusLabel.${tx.status}`)}
                           </Box>
                         </Box>
                       </Box>
@@ -368,7 +390,7 @@ export default function HistoryPage() {
                     {/* Col 3: status badge */}
                     <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center" }}>
                       <Box component="span" sx={{ px: 1.25, py: 0.375, borderRadius: "99px", bgcolor: sc.bg, color: sc.color, fontSize: "11px", fontWeight: 700 }}>
-                        {sc.label}
+                        {t(`statusLabel.${tx.status}`)}
                       </Box>
                     </Box>
 
@@ -379,7 +401,7 @@ export default function HistoryPage() {
                       </Typography>
                       {balAfter !== null && (
                         <Typography sx={{ fontSize: "10px", color: "text.disabled", whiteSpace: "nowrap" }}>
-                          SD: {balAfter} ₫
+                          {t("balancePrefix", { balance: balAfter })}
                         </Typography>
                       )}
                     </Box>
@@ -396,7 +418,7 @@ export default function HistoryPage() {
         <Box sx={{ mt: 2.5, display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
           <Box component="button" onClick={() => void fetchPage(page - 1)} disabled={page <= 1 || loading} sx={{ display: "inline-flex", alignItems: "center", gap: 0.375, px: 2.5, py: 1.25, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", color: page <= 1 ? "text.disabled" : "text.secondary", fontSize: "12px", fontWeight: 600, cursor: page <= 1 ? "default" : "pointer", opacity: page <= 1 ? 0.5 : 1 }}>
             <ChevronLeft size={14} />
-            Trước
+            {t("prev")}
           </Box>
 
           {/* Page numbers */}
@@ -412,7 +434,7 @@ export default function HistoryPage() {
           })}
 
           <Box component="button" onClick={() => void fetchPage(page + 1)} disabled={page >= totalPages || loading} sx={{ display: "inline-flex", alignItems: "center", gap: 0.375, px: 2.5, py: 1.25, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", color: page >= totalPages ? "text.disabled" : "text.secondary", fontSize: "12px", fontWeight: 600, cursor: page >= totalPages ? "default" : "pointer", opacity: page >= totalPages ? 0.5 : 1 }}>
-            Sau
+            {t("next")}
             <ChevronRight size={14} />
           </Box>
         </Box>
@@ -422,9 +444,7 @@ export default function HistoryPage() {
       {!loading && filtered.length > 0 && (
         <Box sx={{ mt: 1.5, display: "flex", justifyContent: "center" }}>
           <Typography sx={{ fontSize: "12px", color: "text.disabled" }}>
-            Hiển thị{" "}
-            <Box component="span" sx={{ fontWeight: 700, color: "text.secondary" }}>{filtered.length}</Box>
-            {" "}/ {meta.total} giao dịch
+            {t("footerCount", { shown: filtered.length, total: meta.total })}
           </Typography>
         </Box>
       )}

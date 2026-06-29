@@ -3,6 +3,7 @@
 import { Box, Grid, Typography, Button, Chip, alpha, CircularProgress } from "@mui/material";
 import { Wallet, PiggyBank, TrendingUp, Target, Bell, Package, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import StatCard from "@/components/dashboard/StatCard";
 import NotificationCard from "@/components/dashboard/NotificationCard";
@@ -14,28 +15,18 @@ import { formatVND } from "@/lib/format";
 import type { StatCardData, Notification } from "@/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function timeAgo(iso: string): string {
+type Translator = ReturnType<typeof useTranslations>;
+
+function timeAgo(iso: string, t: Translator): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 60) return `${Math.max(mins, 1)} phút`;
+  if (mins < 60) return t("timeAgo.minutes", { n: Math.max(mins, 1) });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} giờ`;
+  if (hours < 24) return t("timeAgo.hours", { n: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} ngày`;
-  return `${Math.floor(days / 7)} tuần`;
+  if (days < 7) return t("timeAgo.days", { n: days });
+  return t("timeAgo.weeks", { n: Math.floor(days / 7) });
 }
-
-// Map notification title (English → Vietnamese)
-const NOTIF_TITLE_MAP: Record<string, string> = {
-  "Welcome to SignalGit": "Chào mừng bạn!",
-  "Account Created": "Tài khoản đã được tạo",
-  "Order Completed": "Đơn hàng hoàn thành",
-  "Order Failed": "Đơn hàng thất bại",
-  "Payment Received": "Thanh toán thành công",
-  "Deposit Confirmed": "Nạp tiền thành công",
-  "Refund Processed": "Hoàn tiền thành công",
-  "Password Changed": "Mật khẩu đã thay đổi",
-};
 
 // Map backend notification type → platform icon
 const NOTIF_TYPE_PLATFORM: Record<string, Notification["platform"]> = {
@@ -48,14 +39,16 @@ const NOTIF_TYPE_PLATFORM: Record<string, Notification["platform"]> = {
   promotion:      "global",
 };
 
-function toUiNotification(n: ApiNotification): Notification {
+function toUiNotification(n: ApiNotification, t: Translator): Notification {
+  // Dịch title nếu backend gửi tiêu đề tiếng Anh đã biết, ngược lại giữ nguyên
+  const titleKey = `notifTitle.${n.title}`;
   return {
     id: n.id,
-    userName: "Hệ thống",
+    userName: t("systemName"),
     verified: true,
     platform: NOTIF_TYPE_PLATFORM[n.type] ?? "global",
-    timeAgo: timeAgo(n.createdAt),
-    title: NOTIF_TITLE_MAP[n.title] ?? n.title,
+    timeAgo: timeAgo(n.createdAt, t),
+    title: t.has(titleKey) ? t(titleKey) : n.title,
     description: n.body,
     isRead: n.readAt !== null,
     notifType: n.type,
@@ -76,6 +69,7 @@ const ORDER_STATUS: Record<OrderStatus, { label: string; color: string }> = {
 
 // ── Recent Orders mini component ──────────────────────────────────────────────
 function RecentOrdersSection() {
+  const t = useTranslations("dashboard");
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,7 +90,7 @@ function RecentOrdersSection() {
   if (orders.length === 0) return (
     <Box sx={{ py: 3, textAlign: "center" }}>
       <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>
-        Chưa có đơn hàng nào.
+        {t("ordersEmpty")}
       </Typography>
     </Box>
   );
@@ -104,7 +98,8 @@ function RecentOrdersSection() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       {orders.map((o) => {
-        const s = ORDER_STATUS[o.status] ?? { label: o.status, color: "#64748B" };
+        const s = ORDER_STATUS[o.status] ?? { color: "#64748B" };
+        const statusLabel = ORDER_STATUS[o.status] ? t(`status.${o.status}`) : o.status;
         return (
           <Box
             key={o.id}
@@ -143,7 +138,7 @@ function RecentOrdersSection() {
                   lineHeight: 1.4,
                 }}
               >
-                #{o.orderNumber} · {o.serviceName ?? "Dịch vụ"}
+                #{o.orderNumber} · {o.serviceName ?? t("serviceFallback")}
               </Typography>
               <Typography
                 sx={{
@@ -151,14 +146,14 @@ function RecentOrdersSection() {
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}
               >
-                {o.link} · {o.quantity.toLocaleString("vi-VN")} đơn vị
+                {o.link} · {o.quantity.toLocaleString("vi-VN")} {t("unitSuffix")}
               </Typography>
             </Box>
 
             {/* Right side */}
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5, flexShrink: 0 }}>
               <Chip
-                label={s.label}
+                label={statusLabel}
                 size="small"
                 sx={{
                   height: 18, fontSize: "10px", fontWeight: 600,
@@ -180,6 +175,7 @@ function RecentOrdersSection() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const { user, wallet, refreshWallet } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [totalOrders, setTotalOrders] = useState<number | null>(null);
@@ -190,7 +186,7 @@ export default function DashboardPage() {
       try {
         const res = await notificationsApi.me();
         const list = Array.isArray(res) ? res : res.data;
-        setNotifications(list.slice(0, 5).map(toUiNotification));
+        setNotifications(list.slice(0, 5).map((n) => toUiNotification(n, t)));
       } catch {
         // thông báo lỗi không chặn dashboard
       }
@@ -203,40 +199,40 @@ export default function DashboardPage() {
         // bỏ qua
       }
     })();
-  }, [refreshWallet]);
+  }, [refreshWallet, t]);
 
   const statCards: StatCardData[] = useMemo(
     () => [
       {
         id: "balance",
-        label: "Số Dư Hiện Tại",
+        label: t("statBalance"),
         value: wallet ? formatVND(wallet.balance) : "—",
         icon: <Wallet size={22} color="#2563EB" />,
         color: "primary",
       },
       {
         id: "deposited",
-        label: "Tổng Đã Nạp",
+        label: t("statDeposited"),
         value: wallet ? formatVND(wallet.totalDeposited) : "—",
         icon: <PiggyBank size={22} color="#10B981" />,
         color: "success",
       },
       {
         id: "spent",
-        label: "Tổng Đã Chi",
+        label: t("statSpent"),
         value: wallet ? formatVND(wallet.totalSpent) : "—",
         icon: <TrendingUp size={22} color="#0EA5E9" />,
         color: "info",
       },
       {
         id: "orders",
-        label: "Tổng Đơn Hàng",
+        label: t("statOrders"),
         value: totalOrders !== null ? totalOrders.toLocaleString("vi-VN") : "—",
         icon: <Target size={22} color="#06B6D4" />,
         color: "warning",
       },
     ],
-    [wallet, totalOrders],
+    [wallet, totalOrders, t],
   );
 
   const greetName = user?.fullName || user?.username || "";
@@ -254,10 +250,10 @@ export default function DashboardPage() {
             letterSpacing: "-0.02em",
           }}
         >
-          Xin chào, {greetName} 👋
+          {t("greeting", { name: greetName })}
         </Typography>
         <Typography sx={{ fontSize: "14px", color: "text.secondary", mt: 0.5 }}>
-          Đây là tổng quan tài khoản của bạn hôm nay.
+          {t("subtitle")}
         </Typography>
       </Box>
 
@@ -297,10 +293,10 @@ export default function DashboardPage() {
                   </Box>
                   <Box>
                     <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}>
-                      Thông Báo
+                      {t("notificationsTitle")}
                     </Typography>
                     <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-                      {notifications.length} thông báo
+                      {t("notificationsCount", { count: notifications.length })}
                     </Typography>
                   </Box>
                 </Box>
@@ -309,7 +305,7 @@ export default function DashboardPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                 {notifications.length === 0 ? (
                   <Typography sx={{ fontSize: "13px", color: "text.secondary", py: 3, textAlign: "center" }}>
-                    Chưa có thông báo nào.
+                    {t("notificationsEmpty")}
                   </Typography>
                 ) : (
                   notifications.map((notif) => (
@@ -341,10 +337,10 @@ export default function DashboardPage() {
                   </Box>
                   <Box>
                     <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}>
-                      Đơn Hàng Gần Đây
+                      {t("recentOrdersTitle")}
                     </Typography>
                     <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-                      5 đơn mới nhất
+                      {t("recentOrdersSubtitle")}
                     </Typography>
                   </Box>
                 </Box>
@@ -363,7 +359,7 @@ export default function DashboardPage() {
                     "&:hover": { bgcolor: alpha("#0EA5E9", 0.06) },
                   }}
                 >
-                  Đặt đơn mới
+                  {t("newOrder")}
                 </Button>
               </Box>
 

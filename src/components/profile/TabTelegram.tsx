@@ -3,8 +3,10 @@
 import { Box, Typography, alpha, InputBase } from "@mui/material";
 import { Link } from "lucide-react";
 import { siTelegram } from "simple-icons";
+import { useTranslations } from "next-intl";
 
 export default function TabTelegram() {
+  const t = useTranslations("profile");
   return (
     <Box sx={{ py: 3, maxWidth: 480 }}>
       {/* Telegram logo header */}
@@ -25,10 +27,10 @@ export default function TabTelegram() {
         </Box>
         <Box>
           <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>
-            Liên kết Telegram
+            {t("telegramLinkTitle")}
           </Typography>
           <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>
-            Nhận thông báo đơn hàng qua Telegram bot.
+            {t("telegramLinkSubtitle")}
           </Typography>
         </Box>
       </Box>
@@ -45,13 +47,13 @@ export default function TabTelegram() {
         }}
       >
         <Typography sx={{ fontSize: "12px", fontWeight: 700, color: "text.primary", mb: 1.5 }}>
-          Hướng dẫn liên kết
+          {t("telegramGuideTitle")}
         </Typography>
         {[
-          'Mở Telegram, tìm bot @SignalGitBot',
-          'Gửi lệnh /start để khởi động bot',
-          'Bot sẽ gửi cho bạn một mã liên kết 6 chữ số',
-          'Nhập mã đó vào ô bên dưới và nhấn Liên kết',
+          t("telegramStep1"),
+          t("telegramStep2"),
+          t("telegramStep3"),
+          t("telegramStep4"),
         ].map((step, i) => (
           <Box key={i} sx={{ display: "flex", gap: 1.25, mb: 1 }}>
             <Box
@@ -95,7 +97,7 @@ export default function TabTelegram() {
           }}
         >
           <InputBase
-            placeholder="Nhập mã 6 chữ số..."
+            placeholder={t("telegramCodePlaceholder")}
             inputProps={{ maxLength: 6 }}
             sx={{ flex: 1, fontSize: "13px", letterSpacing: "0.1em", "& input": { p: 0 } }}
           />
@@ -123,7 +125,7 @@ export default function TabTelegram() {
           }}
         >
           <Link size={15} />
-          Liên kết
+          {t("telegramLink")}
         </Box>
       </Box>
     </Box>

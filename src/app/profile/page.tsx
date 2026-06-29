@@ -4,6 +4,7 @@ import { Box, Typography, alpha } from "@mui/material";
 import { Camera, User, Shield, History, Key } from "lucide-react";
 import { siTelegram } from "simple-icons";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import TabInfo from "@/components/profile/TabInfo";
 import TabSecurity from "@/components/profile/TabSecurity";
@@ -13,12 +14,12 @@ import TabApiKeyHistory from "@/components/profile/TabApiKeyHistory";
 
 type TabKey = "overview" | "security" | "telegram" | "login-history" | "apikey-history";
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "overview", label: "Thông Tin", icon: <User size={15} /> },
-  { key: "security", label: "Bảo Mật", icon: <Shield size={15} /> },
-  { key: "telegram", label: "Telegram", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill={`#${siTelegram.hex}`}><path d={siTelegram.path} /></svg> },
-  { key: "login-history", label: "Lịch Sử Đăng Nhập", icon: <History size={15} /> },
-  { key: "apikey-history", label: "Lịch Sử API Key", icon: <Key size={15} /> },
+const TABS: { key: TabKey; labelKey: string; icon: React.ReactNode }[] = [
+  { key: "overview", labelKey: "tabInfo", icon: <User size={15} /> },
+  { key: "security", labelKey: "tabSecurity", icon: <Shield size={15} /> },
+  { key: "telegram", labelKey: "tabTelegram", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill={`#${siTelegram.hex}`}><path d={siTelegram.path} /></svg> },
+  { key: "login-history", labelKey: "tabLoginHistory", icon: <History size={15} /> },
+  { key: "apikey-history", labelKey: "tabApiKeyHistory", icon: <Key size={15} /> },
 ];
 
 const BANNER_GRADIENT = "#1E3A5F";
@@ -26,6 +27,7 @@ const BANNER_GRADIENT = "#1E3A5F";
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const { user } = useAuth();
+  const t = useTranslations("profile");
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -102,7 +104,7 @@ export default function ProfilePage() {
                   transition: "transform 150ms ease",
                   "&:hover": { transform: "scale(1.1)" },
                 }}
-                title="Đổi avatar"
+                title={t("changeAvatar")}
               >
                 <Camera size={15} color="white" />
               </Box>
@@ -137,7 +139,7 @@ export default function ProfilePage() {
           mt: 3,
           p: 0.75,
           borderRadius: "14px",
-          bgcolor: alpha("#0F172A", 0.04),
+          bgcolor: "surface.subtle",
           border: "1px solid",
           borderColor: "divider",
           display: "grid",
@@ -179,10 +181,10 @@ export default function ProfilePage() {
             >
               {tab.icon}
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                {tab.label}
+                {t(tab.labelKey)}
               </Box>
               <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                {tab.label.split(" ")[0]}
+                {t(tab.labelKey).split(" ")[0]}
               </Box>
             </Box>
           );

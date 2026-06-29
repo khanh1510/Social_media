@@ -1,7 +1,11 @@
+"use client";
+
 import { Box, Typography, alpha } from "@mui/material";
 import { Globe, Wrench } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function WebsitePage() {
+  const t = useTranslations("website");
   return (
     <Box
       sx={{
@@ -37,7 +41,7 @@ export default function WebsitePage() {
           letterSpacing: "-0.02em",
         }}
       >
-        Website Con
+        {t("title")}
       </Typography>
 
       <Box
@@ -55,7 +59,7 @@ export default function WebsitePage() {
       >
         <Wrench size={14} color="#F59E0B" />
         <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#F59E0B" }}>
-          Đang phát triển
+          {t("inDevelopment")}
         </Typography>
       </Box>
 
@@ -67,7 +71,7 @@ export default function WebsitePage() {
           lineHeight: 1.6,
         }}
       >
-        Tính năng quản lý website con đang được xây dựng. Vui lòng quay lại sau.
+        {t("description")}
       </Typography>
     </Box>
   );

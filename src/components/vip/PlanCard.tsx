@@ -2,6 +2,7 @@
 
 import { Box, Typography, alpha } from "@mui/material";
 import { Sparkles, Star, CalendarDays, ThumbsUp, UserPlus, PlayCircle, Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { VipPlan, VipPlanDuration } from "@/types";
 import { platformColors } from "@/data/services";
 
@@ -30,6 +31,7 @@ interface PlanCardProps {
 }
 
 export default function PlanCard({ plan, selectedDuration, onSelectDuration }: PlanCardProps) {
+  const t = useTranslations("vip");
   const colors = platformColors[plan.platform];
   const pricing = plan.pricing.find((p) => p.duration === selectedDuration) ?? plan.pricing[0];
 
@@ -76,7 +78,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
         >
           <Sparkles size={11} color="white" />
           <Typography sx={{ fontSize: "10px", fontWeight: 700, color: "white", letterSpacing: "0.04em" }}>
-            Đề xuất
+            {t("recommended")}
           </Typography>
         </Box>
       )}
@@ -163,7 +165,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
           px: 0.5,
           py: 0.5,
           borderRadius: "8px",
-          bgcolor: alpha("#0F172A", 0.03),
+          bgcolor: "surface.subtle",
         }}
       >
         {plan.description}
@@ -230,7 +232,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
           }}
         >
           <Typography sx={{ fontSize: "9px", color: "text.disabled", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", mb: 0.25 }}>
-            Số lượng/bài
+            {t("quantityPerPost")}
           </Typography>
           <Typography sx={{ fontSize: "13px", fontWeight: 800, color: "#0284C7", fontVariantNumeric: "tabular-nums" }}>
             {formatRange(plan.minPerPost, plan.maxPerPost)}
@@ -247,7 +249,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.375, mb: 0.25 }}>
             <CalendarDays size={10} color="#94A3B8" />
             <Typography sx={{ fontSize: "9px", color: "text.disabled", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              Bài/ngày
+              {t("postsPerDay")}
             </Typography>
           </Box>
           <Typography sx={{ fontSize: "13px", fontWeight: 800, color: "#059669", fontVariantNumeric: "tabular-nums" }}>
@@ -297,7 +299,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
             {formatPrice(pricing.pricePerMonth)} ₫
           </Typography>
           <Typography sx={{ fontSize: "10px", color: "text.disabled", fontWeight: 500 }}>
-            / tháng
+            {t("perMonth")}
           </Typography>
         </Box>
 
@@ -323,7 +325,7 @@ export default function PlanCard({ plan, selectedDuration, onSelectDuration }: P
             "&:active": { transform: "scale(0.98)" },
           }}
         >
-          Đăng ký
+          {t("subscribe")}
         </Box>
       </Box>
     </Box>

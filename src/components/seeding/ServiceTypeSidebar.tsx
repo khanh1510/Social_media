@@ -136,7 +136,7 @@ export default function ServiceTypeSidebar({ platforms, activePlatform, activeCa
                 <Box
                   sx={{
                     width: 28, height: 28, borderRadius: "8px",
-                    bgcolor: isActive ? pcfg.bg : alpha("#0F172A", 0.04),
+                    bgcolor: isActive ? pcfg.bg : "surface.subtle",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0,
                   }}

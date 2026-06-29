@@ -3,28 +3,30 @@
 import { Box, Card, Typography, alpha, CircularProgress } from "@mui/material";
 import { Package } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ordersApi } from "@/lib/api";
 import type { OrderStatus } from "@/lib/api/types";
 
 interface StatusStat {
   status: OrderStatus;
-  label: string;
+  labelKey: string;
   color: string;
   bg: string;
   count: number;
 }
 
 const STATUS_CONFIG: Omit<StatusStat, "count">[] = [
-  { status: "PENDING",     label: "Chờ xử lý",   color: "#D97706", bg: "rgba(245,158,11,0.1)" },
-  { status: "PROCESSING",  label: "Đang xử lý",  color: "#2563EB", bg: "rgba(37,99,235,0.1)" },
-  { status: "IN_PROGRESS", label: "Đang chạy",   color: "#0EA5E9", bg: "rgba(14,165,233,0.1)" },
-  { status: "COMPLETED",   label: "Hoàn thành",  color: "#059669", bg: "rgba(16,185,129,0.1)" },
-  { status: "PARTIAL",     label: "Hoàn thành 1 phần", color: "#0891B2", bg: "rgba(6,182,212,0.1)" },
-  { status: "CANCELED",    label: "Đã huỷ",      color: "#64748B", bg: "rgba(100,116,139,0.1)" },
-  { status: "FAILED",      label: "Thất bại",    color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
+  { status: "PENDING",     labelKey: "statusPending",    color: "#D97706", bg: "rgba(245,158,11,0.1)" },
+  { status: "PROCESSING",  labelKey: "statusProcessing", color: "#2563EB", bg: "rgba(37,99,235,0.1)" },
+  { status: "IN_PROGRESS", labelKey: "statusInProgress", color: "#0EA5E9", bg: "rgba(14,165,233,0.1)" },
+  { status: "COMPLETED",   labelKey: "statusCompleted",  color: "#059669", bg: "rgba(16,185,129,0.1)" },
+  { status: "PARTIAL",     labelKey: "statusPartial",    color: "#0891B2", bg: "rgba(6,182,212,0.1)" },
+  { status: "CANCELED",    labelKey: "statusCanceled",   color: "#64748B", bg: "rgba(100,116,139,0.1)" },
+  { status: "FAILED",      labelKey: "statusFailed",     color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
 ];
 
 export default function OrderStatistics() {
+  const t = useTranslations("dashboardComponents");
   const [stats, setStats] = useState<StatusStat[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,10 +96,10 @@ export default function OrderStatistics() {
           </Box>
           <Box>
             <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}>
-              Thống Kê Đơn Hàng
+              {t("orderStatsTitle")}
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-              Tổng quan theo trạng thái
+              {t("orderStatsSubtitle")}
             </Typography>
           </Box>
         </Box>
@@ -129,10 +131,10 @@ export default function OrderStatistics() {
               <Package size={22} color="#94A3B8" />
             </Box>
             <Typography sx={{ fontSize: "13px", color: "text.secondary", textAlign: "center" }}>
-              Chưa có đơn hàng nào
+              {t("noOrders")}
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "text.disabled", textAlign: "center", maxWidth: 160, lineHeight: 1.5 }}>
-              Thống kê sẽ hiển thị khi bạn đặt đơn đầu tiên
+              {t("noOrdersHint")}
             </Typography>
           </Box>
         ) : (
@@ -140,7 +142,7 @@ export default function OrderStatistics() {
             {/* Progress bar tổng */}
             {total !== null && total > 0 && (
               <Box sx={{ mb: 1 }}>
-                <Box sx={{ display: "flex", height: 6, borderRadius: "99px", overflow: "hidden", gap: "1px", bgcolor: alpha("#0F172A", 0.06) }}>
+                <Box sx={{ display: "flex", height: 6, borderRadius: "99px", overflow: "hidden", gap: "1px", bgcolor: "surface.subtle" }}>
                   {activeStats.map((s) => (
                     <Box
                       key={s.status}
@@ -174,7 +176,7 @@ export default function OrderStatistics() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: s.color, flexShrink: 0 }} />
                   <Typography sx={{ fontSize: "12px", fontWeight: 500, color: "text.primary" }}>
-                    {s.label}
+                    {t(s.labelKey)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>

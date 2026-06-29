@@ -3,6 +3,7 @@
 import { Box, Typography, alpha, MenuItem, Select, FormControl } from "@mui/material";
 import { Sparkles, Crown, Zap, Shield, Clock, TrendingUp, Layers, Star, Inbox } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import PlanCard from "@/components/vip/PlanCard";
 import { vipPlans } from "@/data/vip";
 import type { PlatformId, VipPlanDuration } from "@/types";
@@ -10,31 +11,32 @@ import type { PlatformId, VipPlanDuration } from "@/types";
 const ALL = "all";
 
 const featureBadges = [
-  { icon: <Zap size={12} />, label: "Auto tức thì" },
-  { icon: <Shield size={12} />, label: "An toàn 100%" },
-  { icon: <Clock size={12} />, label: "Huỷ bất kỳ lúc nào" },
-  { icon: <TrendingUp size={12} />, label: "Bảo hành refill" },
+  { icon: <Zap size={12} />, labelKey: "badgeAutoInstant" },
+  { icon: <Shield size={12} />, labelKey: "badgeSafe" },
+  { icon: <Clock size={12} />, labelKey: "badgeCancelAnytime" },
+  { icon: <TrendingUp size={12} />, labelKey: "badgeRefillWarranty" },
 ];
 
 const platformOptions = [
-  { value: ALL, label: "Tất cả nền tảng" },
-  { value: "facebook", label: "Facebook" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "instagram", label: "Instagram" },
-  { value: "youtube", label: "YouTube" },
-  { value: "twitter", label: "Twitter/X" },
-  { value: "telegram", label: "Telegram" },
+  { value: ALL, labelKey: "platformAll", label: "" },
+  { value: "facebook", labelKey: null, label: "Facebook" },
+  { value: "tiktok", labelKey: null, label: "TikTok" },
+  { value: "instagram", labelKey: null, label: "Instagram" },
+  { value: "youtube", labelKey: null, label: "YouTube" },
+  { value: "twitter", labelKey: null, label: "Twitter/X" },
+  { value: "telegram", labelKey: null, label: "Telegram" },
 ];
 
 const typeOptions = [
-  { value: ALL, label: "Tất cả loại" },
-  { value: "Like", label: "Like" },
-  { value: "Follow", label: "Follow" },
-  { value: "View", label: "View" },
-  { value: "Share", label: "Share" },
+  { value: ALL, labelKey: "typeAll", label: "" },
+  { value: "Like", labelKey: null, label: "Like" },
+  { value: "Follow", labelKey: null, label: "Follow" },
+  { value: "View", labelKey: null, label: "View" },
+  { value: "Share", labelKey: null, label: "Share" },
 ];
 
 export default function VipPage() {
+  const t = useTranslations("vip");
   const [activeTab, setActiveTab] = useState<"available" | "mine">("available");
   const [platformFilter, setPlatformFilter] = useState<string>(ALL);
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
@@ -65,7 +67,10 @@ export default function VipPage() {
           overflow: "hidden",
           border: "1px solid",
           borderColor: alpha("#0EA5E9", 0.2),
-          background: "linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #ECFEFF 100%)",
+          background: (t) =>
+            t.palette.mode === "dark"
+              ? "linear-gradient(135deg, #0F1B2D 0%, #111827 50%, #0E1F2A 100%)"
+              : "linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #ECFEFF 100%)",
           px: { xs: 3, sm: 4 },
           py: { xs: 3, sm: 3.5 },
         }}
@@ -95,20 +100,20 @@ export default function VipPage() {
                 <Box sx={{
                   display: "inline-flex", alignItems: "center", gap: 0.5,
                   px: 1.5, py: 0.25, borderRadius: "99px", mb: 0.5,
-                  bgcolor: alpha("#FFFFFF", 0.7),
+                  bgcolor: (t) => alpha(t.palette.background.paper, 0.7),
                   border: `1px solid ${alpha("#0EA5E9", 0.25)}`,
                   backdropFilter: "blur(8px)",
                 }}>
                   <Sparkles size={10} color="#0EA5E9" />
                   <Typography sx={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: "linear-gradient(90deg, #0284C7, #06B6D4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                    Auto Seeding
+                    {t("autoSeeding")}
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: { xs: "18px", sm: "22px" }, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.02em", color: "text.primary" }}>
-                  <Box component="span" sx={{ background: "linear-gradient(90deg, #0EA5E9, #06B6D4, #2563EB)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Gói Auto</Box> Seeding
+                  <Box component="span" sx={{ background: "linear-gradient(90deg, #0EA5E9, #06B6D4, #2563EB)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t("heroTitlePrefix")}</Box> {t("heroTitleSuffix")}
                 </Typography>
                 <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-                  Mua 1 lần — mỗi post mới tự động được seed theo gói.
+                  {t("heroSubtitle")}
                 </Typography>
               </Box>
             </Box>
@@ -117,12 +122,12 @@ export default function VipPage() {
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {featureBadges.map((b) => (
                 <Box
-                  key={b.label}
+                  key={b.labelKey}
                   sx={{
                     display: "inline-flex", alignItems: "center", gap: 0.75,
                     px: 2.5, py: 1.25,
                     borderRadius: "8px",
-                    bgcolor: alpha("#FFFFFF", 0.7),
+                    bgcolor: (t) => alpha(t.palette.background.paper, 0.7),
                     border: `1px solid ${alpha("#0EA5E9", 0.2)}`,
                     backdropFilter: "blur(8px)",
                     color: "#0284C7",
@@ -130,7 +135,7 @@ export default function VipPage() {
                 >
                   {b.icon}
                   <Typography sx={{ fontSize: "11px", fontWeight: 600, color: "#0369A1" }}>
-                    {b.label}
+                    {t(b.labelKey)}
                   </Typography>
                 </Box>
               ))}
@@ -148,14 +153,14 @@ export default function VipPage() {
           mb: 2.5,
           p: 0.5,
           borderRadius: "14px",
-          bgcolor: alpha("#F0F9FF", 0.8),
+          bgcolor: (t) => (t.palette.mode === "dark" ? alpha(t.palette.surface.hero, 0.6) : alpha("#F0F9FF", 0.8)),
           border: "1px solid",
           borderColor: alpha("#0EA5E9", 0.15),
         }}
       >
         {[
-          { key: "available", label: "Gói có sẵn", icon: <Layers size={15} /> },
-          { key: "mine", label: "Của tôi", icon: <Crown size={15} /> },
+          { key: "available", label: t("tabAvailable"), icon: <Layers size={15} /> },
+          { key: "mine", label: t("tabMine"), icon: <Crown size={15} /> },
         ].map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -208,7 +213,7 @@ export default function VipPage() {
                 }}
               >
                 {platformOptions.map((o) => (
-                  <MenuItem key={o.value} value={o.value} sx={{ fontSize: "13px" }}>{o.label}</MenuItem>
+                  <MenuItem key={o.value} value={o.value} sx={{ fontSize: "13px" }}>{o.labelKey ? t(o.labelKey) : o.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -226,13 +231,13 @@ export default function VipPage() {
                 }}
               >
                 {typeOptions.map((o) => (
-                  <MenuItem key={o.value} value={o.value} sx={{ fontSize: "13px" }}>{o.label}</MenuItem>
+                  <MenuItem key={o.value} value={o.value} sx={{ fontSize: "13px" }}>{o.labelKey ? t(o.labelKey) : o.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             <Typography sx={{ fontSize: "12px", color: "text.secondary", ml: "auto" }}>
-              <Box component="span" sx={{ fontWeight: 700, color: "#0284C7" }}>{filtered.length}</Box> gói phù hợp
+              <Box component="span" sx={{ fontWeight: 700, color: "#0284C7" }}>{filtered.length}</Box> {t("plansMatched")}
             </Typography>
           </Box>
 
@@ -240,7 +245,7 @@ export default function VipPage() {
           {filtered.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
               <Typography sx={{ fontSize: "14px", color: "text.secondary" }}>
-                Không có gói nào phù hợp.
+                {t("noPlansMatched")}
               </Typography>
             </Box>
           ) : (
@@ -264,17 +269,17 @@ export default function VipPage() {
             borderRadius: "16px",
             border: "1px dashed",
             borderColor: alpha("#0EA5E9", 0.25),
-            bgcolor: alpha("#F0F9FF", 0.5),
+            bgcolor: (t) => (t.palette.mode === "dark" ? alpha(t.palette.surface.hero, 0.4) : alpha("#F0F9FF", 0.5)),
           }}
         >
           <Box sx={{ width: 56, height: 56, borderRadius: "16px", background: "linear-gradient(135deg, #0EA5E9, #06B6D4)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }}>
             <Inbox size={28} color="white" />
           </Box>
           <Typography sx={{ fontSize: "15px", fontWeight: 700, color: "text.secondary" }}>
-            Bạn chưa đăng ký gói nào
+            {t("noPlansSubscribed")}
           </Typography>
           <Typography sx={{ fontSize: "13px", color: "text.disabled", textAlign: "center", maxWidth: 280 }}>
-            Chọn tab &quot;Gói có sẵn&quot; để khám phá các gói Auto Seeding và đăng ký ngay.
+            {t("minePromptEmpty")}
           </Typography>
           <Box
             component="button"
@@ -288,7 +293,7 @@ export default function VipPage() {
               "&:hover": { opacity: 0.9 },
             }}
           >
-            Xem gói có sẵn
+            {t("viewAvailable")}
           </Box>
         </Box>
       )}

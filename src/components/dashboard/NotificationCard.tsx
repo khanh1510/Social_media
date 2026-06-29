@@ -61,7 +61,7 @@ export default function NotificationCard({ notification }: NotificationCardProps
           alignItems: "center",
           gap: 1.5,
           borderBottom: "1px solid",
-          borderColor: alpha("#0F172A", 0.06),
+          borderColor: "divider",
         }}
       >
         {/* Avatar */}

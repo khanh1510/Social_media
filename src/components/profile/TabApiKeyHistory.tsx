@@ -3,11 +3,13 @@
 import { Box, CircularProgress, Typography, alpha } from "@mui/material";
 import { Key } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usersApi } from "@/lib/api";
 import type { ApiKey } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 
 export default function TabApiKeyHistory() {
+  const t = useTranslations("profile");
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,10 +24,10 @@ export default function TabApiKeyHistory() {
     <Box sx={{ py: 3 }}>
       <Box sx={{ mb: 2.5 }}>
         <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>
-          Lịch Sử API Key
+          {t("apiKeyHistoryTitle")}
         </Typography>
         <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-          Danh sách API key đang hoạt động của tài khoản.
+          {t("apiKeyHistorySubtitle")}
         </Typography>
       </Box>
 
@@ -34,13 +36,13 @@ export default function TabApiKeyHistory() {
           <CircularProgress size={24} />
         </Box>
       ) : keys.length === 0 ? (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, py: 6, borderRadius: "14px", border: "1px dashed", borderColor: "divider", bgcolor: alpha("#0F172A", 0.02) }}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, py: 6, borderRadius: "14px", border: "1px dashed", borderColor: "divider", bgcolor: "surface.subtle" }}>
           <Box sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: alpha("#64748B", 0.08), display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Key size={22} color="#94A3B8" />
           </Box>
-          <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Chưa có API key nào.</Typography>
+          <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>{t("noApiKeys")}</Typography>
           <Typography sx={{ fontSize: "12px", color: "text.disabled", textAlign: "center", maxWidth: 240, lineHeight: 1.6 }}>
-            Tạo API key tại tab <strong>Thông Tin</strong> để sử dụng Public API v2.
+            {t.rich("apiKeyHistoryEmptyHint", { b: (chunks) => <strong>{chunks}</strong> })}
           </Typography>
         </Box>
       ) : (
@@ -62,7 +64,7 @@ export default function TabApiKeyHistory() {
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "text.primary" }}>
-                  {k.name ?? "(không tên)"}
+                  {k.name ?? t("unnamedKey")}
                 </Typography>
                 <Typography sx={{ fontSize: "11px", color: "text.disabled", fontFamily: "monospace" }}>
                   {k.keyPrefix ?? "sk-"}••••••
@@ -71,10 +73,10 @@ export default function TabApiKeyHistory() {
 
               <Box sx={{ textAlign: "right", flexShrink: 0 }}>
                 <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-                  Tạo: {formatDate(k.createdAt)}
+                  {t("keyCreatedLabel", { date: formatDate(k.createdAt) })}
                 </Typography>
                 <Typography sx={{ fontSize: "11px", color: k.lastUsedAt ? "#0284C7" : "text.disabled" }}>
-                  {k.lastUsedAt ? `Dùng lần cuối: ${formatDate(k.lastUsedAt)}` : "Chưa sử dụng"}
+                  {k.lastUsedAt ? t("keyLastUsedLabel", { date: formatDate(k.lastUsedAt) }) : t("keyNeverUsedLabel")}
                 </Typography>
               </Box>
 
@@ -89,7 +91,7 @@ export default function TabApiKeyHistory() {
                   fontSize: "10px", fontWeight: 700,
                 }}
               >
-                {k.isActive !== false ? "Hoạt động" : "Vô hiệu"}
+                {k.isActive !== false ? t("keyActive") : t("keyInactive")}
               </Box>
             </Box>
           ))}

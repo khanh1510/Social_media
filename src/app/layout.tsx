@@ -12,13 +12,33 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SignalGit — Bảng Điều Khiển",
-  description: "Bảng điều khiển quản lý dịch vụ mạng xã hội",
+  title: "SignalGit — Dashboard",
+  description: "Social media services management dashboard",
 };
+
+// Chạy trước khi React hydrate: đọc mode đã lưu (hoặc preference hệ thống) và
+// đặt nền + colorScheme ngay để tránh chớp sáng (FOUC) khi đang ở chế độ tối.
+const themeInitScript = `
+(function() {
+  try {
+    var m = localStorage.getItem('color-mode');
+    if (m !== 'light' && m !== 'dark') {
+      m = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    var d = document.documentElement;
+    d.setAttribute('data-theme', m);
+    d.style.colorScheme = m;
+    d.style.backgroundColor = m === 'dark' ? '#0B1120' : '#F8FAFC';
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={inter.variable}>
+    <html lang="vi" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <EmotionRegistry>
           <AuthProvider>{children}</AuthProvider>

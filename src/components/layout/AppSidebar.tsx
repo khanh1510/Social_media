@@ -19,6 +19,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export const SIDEBAR_WIDTH = 260;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
@@ -33,10 +34,10 @@ function SiIcon({ icon, size = 18, color }: { icon: { path: string }; size?: num
 
 const platformLogos: Record<string, React.ReactNode> = {
   facebook: <SiIcon icon={siFacebook} color={`#${siFacebook.hex}`} />,
-  tiktok: <SiIcon icon={siTiktok} color="#000000" />,
+  tiktok: <SiIcon icon={siTiktok} color="currentColor" />,
   instagram: <SiIcon icon={siInstagram} color="#C13584" />,
   youtube: <SiIcon icon={siYoutube} color={`#${siYoutube.hex}`} />,
-  twitter: <SiIcon icon={siX} color="#000000" />,
+  twitter: <SiIcon icon={siX} color="currentColor" />,
   google: <SiIcon icon={siGoogle} color={`#${siGoogle.hex}`} />,
   telegram: <SiIcon icon={siTelegram} color={`#${siTelegram.hex}`} />,
 };
@@ -117,6 +118,8 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ collapsed = false, onClose }: AppSidebarProps) {
   const pathname = usePathname();
+  const tNav = useTranslations("nav");
+  const tSeeding = useTranslations("seedingTypes");
   const [openService, setOpenService] = useState<string | null>(null);
 
   const handleServiceToggle = (id: string) => {
@@ -199,7 +202,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
               SignalGit
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.3 }}>
-              Bảng điều khiển
+              {tNav("panelTitle")}
             </Typography>
           </Box>
         </Box>
@@ -248,7 +251,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                       "&:hover": { bgcolor: alpha("#2563EB", 0.1) },
                     },
                     "&:hover": {
-                      bgcolor: isActive ? alpha("#2563EB", 0.1) : alpha("#0F172A", 0.04),
+                      bgcolor: isActive ? alpha("#2563EB", 0.1) : "sidebar.hoverItemBg",
                     },
                   }}
                 >
@@ -264,9 +267,10 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                       background: isActive ? "#3B82F6" : "transparent",
                       transition: "all 150ms ease",
                       ...(isActive && { boxShadow: `0 4px 10px ${alpha("#2563EB", 0.35)}` }),
+                      "& svg": { color: isActive ? "#FFFFFF" : "text.secondary" },
                     }}
                   >
-                    <Icon size={17} color={isActive ? "white" : "#64748B"} />
+                    <Icon size={17} />
                   </Box>
 
                   {/* Label — hidden when collapsed */}
@@ -276,14 +280,14 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                         sx={{
                           fontSize: "13px",
                           fontWeight: isActive ? 700 : 500,
-                          color: isActive ? "primary.main" : alpha("#0F172A", 0.7),
+                          color: isActive ? "primary.main" : "text.primary",
                           flex: 1,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {item.label}
+                        {tNav(item.id)}
                       </Typography>
 
                       {isActive && (
@@ -317,7 +321,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
               return (
                 <ListItem key={item.id} disablePadding>
                   {collapsed ? (
-                    <Tooltip title={item.label} placement="right" arrow>
+                    <Tooltip title={tNav(item.id)} placement="right" arrow>
                       <Box sx={{ width: "100%" }}>{button}</Box>
                     </Tooltip>
                   ) : (
@@ -339,7 +343,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                 px: 1.25, mb: 1,
               }}
             >
-              Sản Phẩm & Dịch Vụ
+              {tNav("sectionProducts")}
             </Typography>
           )}
 
@@ -357,8 +361,8 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                     px: collapsed ? 1 : 1.25,
                     gap: collapsed ? 0 : 1.25,
                     justifyContent: collapsed ? "center" : "flex-start",
-                    bgcolor: isOpen ? alpha("#0F172A", 0.04) : "transparent",
-                    "&:hover": { bgcolor: alpha("#0F172A", 0.05) },
+                    bgcolor: isOpen ? "sidebar.hoverItemBg" : "transparent",
+                    "&:hover": { bgcolor: "sidebar.hoverItemBg" },
                     transition: "all 200ms ease",
                   }}
                 >
@@ -367,7 +371,9 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                       width: 34, height: 34, borderRadius: "10px",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0,
-                      bgcolor: alpha("#0F172A", 0.04),
+                      bgcolor: "sidebar.hoverItemBg",
+                      // TikTok & Twitter/X dùng currentColor → kế thừa màu này
+                      color: "text.primary",
                     }}
                   >
                     {platformLogos[service.id]}
@@ -375,7 +381,7 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
 
                   {!collapsed && (
                     <>
-                      <Typography sx={{ fontSize: "13px", fontWeight: 500, color: alpha("#0F172A", 0.7), flex: 1 }}>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "text.primary", flex: 1 }}>
                         {service.label}
                       </Typography>
                       <ChevronRight
@@ -412,11 +418,11 @@ export default function AppSidebar({ collapsed = false, onClose }: AppSidebarPro
                           onClick={onClose}
                           sx={{
                             borderRadius: "8px", py: 0.75, px: 1.5,
-                            "&:hover": { bgcolor: alpha("#0F172A", 0.05) },
+                            "&:hover": { bgcolor: "sidebar.hoverItemBg" },
                           }}
                         >
-                          <Typography sx={{ fontSize: "12px", fontWeight: 500, color: alpha("#0F172A", 0.6) }}>
-                            {sub.label}
+                          <Typography sx={{ fontSize: "12px", fontWeight: 500, color: "text.secondary" }}>
+                            {tSeeding(sub.slug)}
                           </Typography>
                         </ListItemButton>
                       ))}

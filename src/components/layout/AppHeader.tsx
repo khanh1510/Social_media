@@ -15,47 +15,50 @@ import {
   ListItemIcon,
   Divider,
 } from "@mui/material";
-import { PanelLeftClose, PanelLeftOpen, Search, Sun, ChevronDown, LogOut, User as UserIcon, LayoutDashboard, LayoutGrid, Crown, CreditCard, History, Webhook, Headphones, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Search, Sun, Moon, ChevronDown, LogOut, User as UserIcon, LayoutDashboard, LayoutGrid, Crown, CreditCard, History, Webhook, Headphones, X, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useColorMode } from "@/contexts/ColorModeContext";
+import { useLocale } from "@/contexts/LocaleContext";
+import { useTranslations } from "next-intl";
 import { formatVND } from "@/lib/format";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "./AppSidebar";
 
 const SEARCH_ITEMS = [
-  { label: "Tổng Quan", href: "/dashboard", icon: LayoutDashboard, group: "Trang" },
-  { label: "Bảng Giá Dịch Vụ", href: "/services", icon: LayoutGrid, group: "Trang" },
-  { label: "Gói VIP", href: "/vip", icon: Crown, group: "Trang" },
-  { label: "Nạp Tiền", href: "/deposit", icon: CreditCard, group: "Trang" },
-  { label: "Lịch Sử Giao Dịch", href: "/history", icon: History, group: "Trang" },
-  { label: "Tài Liệu API", href: "/api", icon: Webhook, group: "Trang" },
-  { label: "Hỗ Trợ", href: "/support", icon: Headphones, group: "Trang" },
-  { label: "Hồ Sơ", href: "/profile", icon: UserIcon, group: "Trang" },
-  { label: "Facebook — Page Likes", href: "/seeding?platform=facebook&category=facebook-page-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Facebook — Followers", href: "/seeding?platform=facebook&category=facebook-followers", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Facebook — Post Likes", href: "/seeding?platform=facebook&category=facebook-post-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Facebook — Comments", href: "/seeding?platform=facebook&category=facebook-comments", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Facebook — Shares", href: "/seeding?platform=facebook&category=facebook-shares", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Facebook — Video Views", href: "/seeding?platform=facebook&category=facebook-video-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "TikTok — Followers", href: "/seeding?platform=tiktok&category=tiktok-followers", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "TikTok — Likes", href: "/seeding?platform=tiktok&category=tiktok-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "TikTok — Views", href: "/seeding?platform=tiktok&category=tiktok-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "TikTok — Comments", href: "/seeding?platform=tiktok&category=tiktok-comments", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "TikTok — Shares", href: "/seeding?platform=tiktok&category=tiktok-shares", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Instagram — Followers", href: "/seeding?platform=instagram&category=instagram-followers", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Instagram — Likes", href: "/seeding?platform=instagram&category=instagram-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Instagram — Views", href: "/seeding?platform=instagram&category=instagram-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Instagram — Reels Views", href: "/seeding?platform=instagram&category=instagram-reels-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Instagram — Story Views", href: "/seeding?platform=instagram&category=instagram-story-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "YouTube — Views", href: "/seeding?platform=youtube&category=youtube-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "YouTube — Shorts Views", href: "/seeding?platform=youtube&category=youtube-shorts-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "YouTube — Subscribers", href: "/seeding?platform=youtube&category=youtube-subscribers", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "YouTube — Likes", href: "/seeding?platform=youtube&category=youtube-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Twitter/X — Followers", href: "/seeding?platform=twitter&category=twitter-followers", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Twitter/X — Likes", href: "/seeding?platform=twitter&category=twitter-likes", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Twitter/X — Views", href: "/seeding?platform=twitter&category=twitter-views", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Telegram — Members", href: "/seeding?platform=telegram&category=telegram-members", icon: LayoutGrid, group: "Dịch vụ" },
-  { label: "Telegram — Post Views", href: "/seeding?platform=telegram&category=telegram-post-views", icon: LayoutGrid, group: "Dịch vụ" },
+  { label: "Tổng Quan", nameKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, group: "pages" },
+  { label: "Bảng Giá Dịch Vụ", nameKey: "services", href: "/services", icon: LayoutGrid, group: "pages" },
+  { label: "Gói VIP", nameKey: "vip", href: "/vip", icon: Crown, group: "pages" },
+  { label: "Nạp Tiền", nameKey: "deposit", href: "/deposit", icon: CreditCard, group: "pages" },
+  { label: "Lịch Sử Giao Dịch", nameKey: "history", href: "/history", icon: History, group: "pages" },
+  { label: "Tài Liệu API", nameKey: "api", href: "/api", icon: Webhook, group: "pages" },
+  { label: "Hỗ Trợ", nameKey: "support", href: "/support", icon: Headphones, group: "pages" },
+  { label: "Hồ Sơ", nameKey: "profile", href: "/profile", icon: UserIcon, group: "pages" },
+  { label: "Facebook — Page Likes", href: "/seeding?platform=facebook&category=facebook-page-likes", icon: LayoutGrid, group: "services" },
+  { label: "Facebook — Followers", href: "/seeding?platform=facebook&category=facebook-followers", icon: LayoutGrid, group: "services" },
+  { label: "Facebook — Post Likes", href: "/seeding?platform=facebook&category=facebook-post-likes", icon: LayoutGrid, group: "services" },
+  { label: "Facebook — Comments", href: "/seeding?platform=facebook&category=facebook-comments", icon: LayoutGrid, group: "services" },
+  { label: "Facebook — Shares", href: "/seeding?platform=facebook&category=facebook-shares", icon: LayoutGrid, group: "services" },
+  { label: "Facebook — Video Views", href: "/seeding?platform=facebook&category=facebook-video-views", icon: LayoutGrid, group: "services" },
+  { label: "TikTok — Followers", href: "/seeding?platform=tiktok&category=tiktok-followers", icon: LayoutGrid, group: "services" },
+  { label: "TikTok — Likes", href: "/seeding?platform=tiktok&category=tiktok-likes", icon: LayoutGrid, group: "services" },
+  { label: "TikTok — Views", href: "/seeding?platform=tiktok&category=tiktok-views", icon: LayoutGrid, group: "services" },
+  { label: "TikTok — Comments", href: "/seeding?platform=tiktok&category=tiktok-comments", icon: LayoutGrid, group: "services" },
+  { label: "TikTok — Shares", href: "/seeding?platform=tiktok&category=tiktok-shares", icon: LayoutGrid, group: "services" },
+  { label: "Instagram — Followers", href: "/seeding?platform=instagram&category=instagram-followers", icon: LayoutGrid, group: "services" },
+  { label: "Instagram — Likes", href: "/seeding?platform=instagram&category=instagram-likes", icon: LayoutGrid, group: "services" },
+  { label: "Instagram — Views", href: "/seeding?platform=instagram&category=instagram-views", icon: LayoutGrid, group: "services" },
+  { label: "Instagram — Reels Views", href: "/seeding?platform=instagram&category=instagram-reels-views", icon: LayoutGrid, group: "services" },
+  { label: "Instagram — Story Views", href: "/seeding?platform=instagram&category=instagram-story-views", icon: LayoutGrid, group: "services" },
+  { label: "YouTube — Views", href: "/seeding?platform=youtube&category=youtube-views", icon: LayoutGrid, group: "services" },
+  { label: "YouTube — Shorts Views", href: "/seeding?platform=youtube&category=youtube-shorts-views", icon: LayoutGrid, group: "services" },
+  { label: "YouTube — Subscribers", href: "/seeding?platform=youtube&category=youtube-subscribers", icon: LayoutGrid, group: "services" },
+  { label: "YouTube — Likes", href: "/seeding?platform=youtube&category=youtube-likes", icon: LayoutGrid, group: "services" },
+  { label: "Twitter/X — Followers", href: "/seeding?platform=twitter&category=twitter-followers", icon: LayoutGrid, group: "services" },
+  { label: "Twitter/X — Likes", href: "/seeding?platform=twitter&category=twitter-likes", icon: LayoutGrid, group: "services" },
+  { label: "Twitter/X — Views", href: "/seeding?platform=twitter&category=twitter-views", icon: LayoutGrid, group: "services" },
+  { label: "Telegram — Members", href: "/seeding?platform=telegram&category=telegram-members", icon: LayoutGrid, group: "services" },
+  { label: "Telegram — Post Views", href: "/seeding?platform=telegram&category=telegram-post-views", icon: LayoutGrid, group: "services" },
 ];
 
 interface AppHeaderProps {
@@ -77,11 +80,33 @@ function VNFlag() {
   );
 }
 
+// UK flag SVG inline (Union Jack đơn giản hóa)
+function UKFlag() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 32 32" style={{ borderRadius: 3, flexShrink: 0 }}>
+      <rect width="32" height="32" fill="#012169" rx="2" />
+      <path d="M0 0 L32 32 M32 0 L0 32" stroke="#FFF" strokeWidth="6" />
+      <path d="M0 0 L32 32 M32 0 L0 32" stroke="#C8102E" strokeWidth="3" />
+      <path d="M16 0 V32 M0 16 H32" stroke="#FFF" strokeWidth="10" />
+      <path d="M16 0 V32 M0 16 H32" stroke="#C8102E" strokeWidth="5" />
+    </svg>
+  );
+}
+
 export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapsed }: AppHeaderProps) {
   const sidebarW = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
   const { user, wallet, logout } = useAuth();
+  const { mode, setColorMode } = useColorMode();
+  const { locale, setLocale } = useLocale();
+  const t = useTranslations("header");
+  const tNav = useTranslations("nav");
+  // Nhãn hiển thị: trang dùng key dịch; dịch vụ giữ tên riêng
+  const labelOf = (item: { label: string; nameKey?: string }) =>
+    item.nameKey ? tNav(item.nameKey) : item.label;
   const router = useRouter();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
+  const [langAnchor, setLangAnchor] = useState<HTMLElement | null>(null);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -90,7 +115,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
 
   const results = query.trim().length > 0
     ? SEARCH_ITEMS.filter((item) =>
-        item.label.toLowerCase().includes(query.toLowerCase())
+        labelOf(item).toLowerCase().includes(query.toLowerCase())
       ).slice(0, 8)
     : [];
 
@@ -158,7 +183,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
         width: { xs: "100%", md: `calc(100% - ${sidebarW}px)` },
         ml: { xs: 0, md: `${sidebarW}px` },
         transition: "width 250ms ease, margin-left 250ms ease",
-        bgcolor: "rgba(255,255,255,0.82)",
+        bgcolor: (theme) => alpha(theme.palette.background.paper, 0.82),
         backdropFilter: "blur(14px)",
         borderBottom: "1px solid",
         borderColor: "divider",
@@ -174,7 +199,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
         }}
       >
         {/* Collapse sidebar toggle — desktop */}
-        <Tooltip title={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}>
+        <Tooltip title={collapsed ? t("expandSidebar") : t("collapseSidebar")}>
           <IconButton
             onClick={onToggleCollapse}
             size="small"
@@ -194,7 +219,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
         </Tooltip>
 
         {/* Mobile menu toggle */}
-        <Tooltip title="Menu">
+        <Tooltip title={t("menu")}>
           <IconButton
             onClick={onMobileMenuOpen}
             size="small"
@@ -255,7 +280,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, 0)); }
                 if (e.key === "Enter" && results[activeIdx]) { handleSelect(results[activeIdx].href); }
               }}
-              placeholder="Tìm kiếm trang, dịch vụ..."
+              placeholder={t("searchPlaceholder")}
               sx={{
                 flex: 1,
                 fontSize: "13px",
@@ -312,7 +337,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                   return (
                     <Box key={group}>
                       <Typography sx={{ px: 1.5, pt: 1, pb: 0.5, fontSize: "10px", fontWeight: 700, color: "text.disabled", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                        {group}
+                        {group === "pages" ? t("groupPages") : t("groupServices")}
                       </Typography>
                       {items.map((item) => {
                         idx++;
@@ -336,7 +361,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                               <Icon size={14} color="#0EA5E9" />
                             </Box>
                             <Typography sx={{ fontSize: "13px", fontWeight: isActive ? 600 : 500, color: isActive ? "text.primary" : "text.secondary" }}>
-                              {item.label}
+                              {labelOf(item)}
                             </Typography>
                           </Box>
                         );
@@ -346,7 +371,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 });
               })()}
               <Box sx={{ px: 1.5, py: 0.75, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 1.5 }}>
-                {[["↑↓", "Di chuyển"], ["↵", "Chọn"], ["Esc", "Đóng"]].map(([key, desc]) => (
+                {[["↑↓", t("searchMove")], ["↵", t("searchSelect")], ["Esc", t("searchClose")]].map(([key, desc]) => (
                   <Box key={key} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     <Box sx={{ px: 0.625, py: 0.125, borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: alpha("#0F172A", 0.03) }}>
                       <Typography sx={{ fontSize: "10px", fontWeight: 700, color: "text.disabled", lineHeight: 1.4 }}>{key}</Typography>
@@ -369,7 +394,7 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                 px: 2, py: 2, zIndex: 9999, textAlign: "center",
               }}
             >
-              <Typography sx={{ fontSize: "13px", color: "text.disabled" }}>Không tìm thấy kết quả cho &quot;{query}&quot;</Typography>
+              <Typography sx={{ fontSize: "13px", color: "text.disabled" }}>{t("noResults", { query })}</Typography>
             </Box>
           )}
         </Box>
@@ -379,38 +404,102 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
 
         {/* Right: theme + language + account */}
         <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
-          {/* Theme toggle */}
-          <Tooltip title="Chọn giao diện">
-            <IconButton
-              size="small"
+          {/* Theme dropdown */}
+          <Tooltip title={t("theme")}>
+            <Box
+              component="button"
+              onClick={(e: React.MouseEvent<HTMLElement>) => setThemeAnchor(e.currentTarget)}
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                color: "text.secondary",
+                display: "flex", alignItems: "center", gap: 0.25,
+                height: 36, px: 0.75,
+                border: "none", background: "none", cursor: "pointer",
+                borderRadius: "9px",
+                color: themeAnchor ? "info.main" : "text.secondary",
+                bgcolor: themeAnchor ? alpha("#0EA5E9", 0.08) : "transparent",
                 "&:hover": { bgcolor: alpha("#0EA5E9", 0.08), color: "info.main" },
                 transition: "all 150ms ease",
               }}
             >
-              <Sun size={18} />
-            </IconButton>
+              {mode === "dark" ? <Moon size={18} /> : <Sun size={18} />}
+              <ChevronDown size={13} style={{ opacity: 0.6 }} />
+            </Box>
           </Tooltip>
+          <Menu
+            anchorEl={themeAnchor}
+            open={Boolean(themeAnchor)}
+            onClose={() => setThemeAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            slotProps={{ paper: { sx: { mt: 0.75, minWidth: 160, borderRadius: "12px" } } }}
+          >
+            <Typography sx={{ px: 2, pt: 1, pb: 0.5, fontSize: "10px", fontWeight: 700, color: "text.disabled", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              {t("theme")}
+            </Typography>
+            {([
+              { value: "light" as const, label: t("themeLight"), icon: <Sun size={16} /> },
+              { value: "dark" as const, label: t("themeDark"), icon: <Moon size={16} /> },
+            ]).map((opt) => (
+              <MenuItem
+                key={opt.value}
+                selected={mode === opt.value}
+                onClick={() => { setColorMode(opt.value); setThemeAnchor(null); }}
+                sx={{ gap: 1, fontSize: "13px" }}
+              >
+                <ListItemIcon sx={{ minWidth: "auto !important", color: mode === opt.value ? "info.main" : "text.secondary" }}>
+                  {opt.icon}
+                </ListItemIcon>
+                <Box sx={{ flex: 1 }}>{opt.label}</Box>
+                {mode === opt.value && <Check size={15} color="#0EA5E9" />}
+              </MenuItem>
+            ))}
+          </Menu>
 
-          {/* Language */}
-          <Tooltip title="Tiếng Việt">
-            <IconButton
-              size="small"
+          {/* Language dropdown */}
+          <Tooltip title={t("language")}>
+            <Box
+              component="button"
+              onClick={(e: React.MouseEvent<HTMLElement>) => setLangAnchor(e.currentTarget)}
               sx={{
-                width: 36,
-                height: 36,
+                display: "flex", alignItems: "center", gap: 0.25,
+                height: 36, px: 0.75,
+                border: "none", background: "none", cursor: "pointer",
                 borderRadius: "9px",
+                bgcolor: langAnchor ? alpha("#0F172A", 0.05) : "transparent",
                 "&:hover": { bgcolor: alpha("#0F172A", 0.05) },
                 transition: "all 150ms ease",
               }}
             >
-              <VNFlag />
-            </IconButton>
+              {locale === "vi" ? <VNFlag /> : <UKFlag />}
+              <ChevronDown size={13} color="#94A3B8" />
+            </Box>
           </Tooltip>
+          <Menu
+            anchorEl={langAnchor}
+            open={Boolean(langAnchor)}
+            onClose={() => setLangAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            slotProps={{ paper: { sx: { mt: 0.75, minWidth: 180, borderRadius: "12px" } } }}
+          >
+            <Typography sx={{ px: 2, pt: 1, pb: 0.5, fontSize: "10px", fontWeight: 700, color: "text.disabled", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              {t("language")}
+            </Typography>
+            {([
+              { value: "vi" as const, label: t("languageVi"), icon: <VNFlag /> },
+              { value: "en" as const, label: t("languageEn"), icon: <UKFlag /> },
+            ]).map((opt) => (
+              <MenuItem
+                key={opt.value}
+                selected={locale === opt.value}
+                onClick={() => { setLocale(opt.value); setLangAnchor(null); }}
+                sx={{ gap: 1, fontSize: "13px" }}
+              >
+                <ListItemIcon sx={{ minWidth: "auto !important" }}>{opt.icon}</ListItemIcon>
+                <Box sx={{ flex: 1 }}>{opt.label}</Box>
+                {locale === opt.value && <Check size={15} color="#0EA5E9" />}
+              </MenuItem>
+            ))}
+          </Menu>
 
           {/* Account button */}
           <Box
@@ -448,7 +537,8 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                     fontSize: "11px",
                     fontWeight: 700,
                     bgcolor: "primary.main",
-                    border: "2px solid white",
+                    border: "2px solid",
+                    borderColor: "background.paper",
                   }}
                 >
                   {initials || "?"}
@@ -464,7 +554,8 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
                   height: 9,
                   borderRadius: "50%",
                   bgcolor: "#10B981",
-                  border: "2px solid white",
+                  border: "2px solid",
+                  borderColor: "background.paper",
                 }}
               />
             </Box>
@@ -519,11 +610,11 @@ export default function AppHeader({ onMobileMenuOpen, onToggleCollapse, collapse
             <Divider />
             <MenuItem onClick={() => { setMenuAnchor(null); router.push("/profile"); }}>
               <ListItemIcon><UserIcon size={16} /></ListItemIcon>
-              Hồ sơ
+              {t("profile")}
             </MenuItem>
             <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
               <ListItemIcon><LogOut size={16} color="#EF4444" /></ListItemIcon>
-              Đăng xuất
+              {t("logout")}
             </MenuItem>
           </Menu>
         </Box>

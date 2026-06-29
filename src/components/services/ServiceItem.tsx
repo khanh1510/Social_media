@@ -148,7 +148,7 @@ export default function ServiceItem({ service, accentColor }: ServiceItemProps) 
                 component="span"
                 sx={{
                   px: 1, py: 0.25, borderRadius: "6px",
-                  bgcolor: alpha("#0F172A", 0.05),
+                  bgcolor: "surface.subtle",
                   fontSize: "10px", fontWeight: 600,
                   color: "text.secondary",
                   fontVariantNumeric: "tabular-nums",

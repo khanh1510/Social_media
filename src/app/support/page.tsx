@@ -30,6 +30,7 @@ import {
   Search,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ticketsApi, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from "@/lib/api/types";
@@ -68,27 +69,30 @@ function fmtDate(iso: string) {
 
 // ── Badges ────────────────────────────────────────────────
 function StatusBadge({ status }: { status: TicketStatus }) {
+  const t = useTranslations("support");
   const c = STATUS_CFG[status];
   return (
     <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.9, py: 0.3,
       borderRadius: "6px", bgcolor: c.bg, color: c.color, fontSize: "11px", fontWeight: 600 }}>
-      {c.icon}{c.label}
+      {c.icon}{t(`status.${status}`)}
     </Box>
   );
 }
 
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
+  const t = useTranslations("support");
   const c = PRIORITY_CFG[priority];
   return (
     <Box sx={{ display: "inline-flex", px: 0.9, py: 0.3, borderRadius: "6px",
       bgcolor: c.bg, color: c.color, fontSize: "11px", fontWeight: 600 }}>
-      {c.label}
+      {t(`priority.${priority}`)}
     </Box>
   );
 }
 
 // ── Create form ───────────────────────────────────────────
 function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; onCancel: () => void }) {
+  const t = useTranslations("support");
   const [subject,  setSubject]  = useState("");
   const [body,     setBody]     = useState("");
   const [priority, setPriority] = useState<TicketPriority>("normal");
@@ -96,13 +100,13 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
   const [err,      setErr]      = useState("");
 
   async function handleSubmit() {
-    if (!subject.trim() || !body.trim()) { setErr("Vui lòng điền tiêu đề và nội dung."); return; }
+    if (!subject.trim() || !body.trim()) { setErr(t("errFillSubjectBody")); return; }
     setErr(""); setLoading(true);
     try {
       const ticket = await ticketsApi.create({ subject: subject.trim(), body: body.trim(), priority });
       onCreated(ticket);
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Không tạo được ticket.");
+      setErr(e instanceof ApiError ? e.message : t("errCreate"));
     } finally { setLoading(false); }
   }
 
@@ -110,8 +114,8 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
     <Box sx={{ bgcolor: "background.paper", borderRadius: "12px", border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
       {/* Header */}
       <Box sx={{ px: 3, py: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>Tạo yêu cầu hỗ trợ mới</Typography>
-        <Box component="button" onClick={onCancel} sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "6px", border: "none", bgcolor: alpha("#0F172A", 0.05), color: "text.secondary", cursor: "pointer", "&:hover": { bgcolor: alpha("#0F172A", 0.1) } }}>
+        <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>{t("createTitle")}</Typography>
+        <Box component="button" onClick={onCancel} sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "6px", border: "none", bgcolor: "surface.subtle", color: "text.secondary", cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}>
           <X size={14} />
         </Box>
       </Box>
@@ -120,15 +124,15 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
 
         {/* Subject */}
         <Box>
-          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>Tiêu đề <Box component="span" sx={{ color: "error.main" }}>*</Box></Typography>
+          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>{t("subject")} <Box component="span" sx={{ color: "error.main" }}>*</Box></Typography>
           <Box sx={{ height: 38, px: 1.5, borderRadius: "8px", border: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", "&:focus-within": { borderColor: "#2563EB", boxShadow: `0 0 0 3px ${alpha("#2563EB", 0.08)}` } }}>
-            <InputBase value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mô tả ngắn vấn đề..." fullWidth sx={{ fontSize: "13px", "& input": { p: 0 } }} />
+            <InputBase value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("subjectPlaceholder")} fullWidth sx={{ fontSize: "13px", "& input": { p: 0 } }} />
           </Box>
         </Box>
 
         {/* Priority */}
         <Box>
-          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>Mức độ ưu tiên</Typography>
+          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>{t("priorityLabel")}</Typography>
           <Select size="small" value={priority} onChange={(e) => setPriority(e.target.value as TicketPriority)}
             sx={{ height: 38, fontSize: "13px", borderRadius: "8px", minWidth: 180,
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
@@ -143,10 +147,10 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
 
         {/* Body */}
         <Box>
-          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>Nội dung <Box component="span" sx={{ color: "error.main" }}>*</Box></Typography>
+          <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>{t("content")} <Box component="span" sx={{ color: "error.main" }}>*</Box></Typography>
           <Box sx={{ borderRadius: "8px", border: "1px solid", borderColor: "divider", "&:focus-within": { borderColor: "#2563EB", boxShadow: `0 0 0 3px ${alpha("#2563EB", 0.08)}` } }}>
             <InputBase multiline minRows={5} value={body} onChange={(e) => setBody(e.target.value)}
-              placeholder="Mô tả chi tiết vấn đề, kèm mã đơn hàng nếu liên quan..." fullWidth
+              placeholder={t("contentPlaceholder")} fullWidth
               sx={{ p: 1.5, fontSize: "13px", lineHeight: 1.6 }} />
           </Box>
           <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 0.5 }}>{body.length} / 10000</Typography>
@@ -156,11 +160,11 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
           <Box component="button" onClick={() => void handleSubmit()} disabled={loading}
             sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", bgcolor: "#2563EB", color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 2px 8px rgba(37,99,235,0.25)", "&:hover": { opacity: 0.9 } }}>
             {loading ? <CircularProgress size={13} color="inherit" /> : <Send size={13} />}
-            Gửi yêu cầu
+            {t("submitRequest")}
           </Box>
           <Box component="button" onClick={onCancel}
             sx={{ display: "inline-flex", alignItems: "center", px: 2, py: 1, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "13px", fontWeight: 600, cursor: "pointer", "&:hover": { borderColor: "#2563EB", color: "#2563EB" } }}>
-            Hủy
+            {t("cancel")}
           </Box>
         </Box>
       </Box>
@@ -170,14 +174,15 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (t: Ticket) => void; o
 
 // ── Chat bubble ───────────────────────────────────────────
 function ChatBubble({ msg, userId }: { msg: TicketMessage; userId: string }) {
+  const t = useTranslations("support");
   const isMe = msg.authorId === userId && !msg.isStaff;
   return (
     <Box sx={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 1, alignItems: "flex-end" }}>
       <Box sx={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", bgcolor: isMe ? alpha("#2563EB", 0.12) : alpha("#059669", 0.12), display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Typography sx={{ fontSize: "10px", fontWeight: 800, color: isMe ? "#2563EB" : "#059669" }}>{isMe ? "Bạn" : "SP"}</Typography>
+        <Typography sx={{ fontSize: "10px", fontWeight: 800, color: isMe ? "#2563EB" : "#059669" }}>{isMe ? t("you") : t("staff")}</Typography>
       </Box>
       <Box sx={{ maxWidth: "72%", display: "flex", flexDirection: "column", gap: 0.4, alignItems: isMe ? "flex-end" : "flex-start" }}>
-        <Box sx={{ px: 1.5, py: 1, borderRadius: isMe ? "12px 12px 3px 12px" : "12px 12px 12px 3px", bgcolor: isMe ? "#2563EB" : alpha("#0F172A", 0.04), border: isMe ? "none" : "1px solid", borderColor: "divider" }}>
+        <Box sx={{ px: 1.5, py: 1, borderRadius: isMe ? "12px 12px 3px 12px" : "12px 12px 12px 3px", bgcolor: isMe ? "#2563EB" : "surface.subtle", border: isMe ? "none" : "1px solid", borderColor: "divider" }}>
           <Typography sx={{ fontSize: "13px", color: isMe ? "white" : "text.primary", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.body}</Typography>
         </Box>
         <Typography sx={{ fontSize: "10px", color: "text.disabled" }}>{fmtDate(msg.createdAt)}</Typography>
@@ -188,6 +193,7 @@ function ChatBubble({ msg, userId }: { msg: TicketMessage; userId: string }) {
 
 // ── Ticket detail ─────────────────────────────────────────
 function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: string; onBack: () => void }) {
+  const t = useTranslations("support");
   const [ticket,  setTicket]  = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [reply,   setReply]   = useState("");
@@ -199,7 +205,7 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
   useEffect(() => {
     ticketsApi.get(ticketId)
       .then(setTicket)
-      .catch(() => setErr("Không tải được ticket."))
+      .catch(() => setErr(t("errLoadTicket")))
       .finally(() => setLoading(false));
   }, [ticketId]);
 
@@ -213,7 +219,7 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
     try {
       const updated = await ticketsApi.reply(ticketId, reply.trim());
       setTicket(updated); setReply("");
-    } catch (e) { setErr(e instanceof ApiError ? e.message : "Gửi thất bại."); }
+    } catch (e) { setErr(e instanceof ApiError ? e.message : t("errSend")); }
     finally { setSending(false); }
   }
 
@@ -222,12 +228,12 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
     try {
       await ticketsApi.close(ticketId);
       setTicket((prev) => prev ? { ...prev, status: "CLOSED" } : prev);
-    } catch (e) { setErr(e instanceof ApiError ? e.message : "Đóng ticket thất bại."); }
+    } catch (e) { setErr(e instanceof ApiError ? e.message : t("errClose")); }
     finally { setClosing(false); }
   }
 
   if (loading) return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>;
-  if (!ticket) return <Alert severity="error">{err || "Không tìm thấy ticket."}</Alert>;
+  if (!ticket) return <Alert severity="error">{err || t("notFound")}</Alert>;
 
   const isClosed = ticket.status === "CLOSED";
 
@@ -236,7 +242,7 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
       {/* Header */}
       <Box sx={{ px: 3, py: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
         <Box component="button" onClick={onBack} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2.5, py: 1.25, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "12px", fontWeight: 600, cursor: "pointer", "&:hover": { borderColor: "#2563EB", color: "#2563EB" } }}>
-          <ChevronLeft size={13} /> Quay lại
+          <ChevronLeft size={13} /> {t("back")}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ticket.subject}</Typography>
@@ -250,7 +256,7 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
           <Box component="button" onClick={() => void handleClose()} disabled={closing}
             sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2.5, py: 1.25, borderRadius: "7px", border: "1px solid", borderColor: alpha("#DC2626", 0.35), bgcolor: "transparent", color: "#DC2626", fontSize: "12px", fontWeight: 600, cursor: "pointer", opacity: closing ? 0.6 : 1, "&:hover": { bgcolor: alpha("#DC2626", 0.04) } }}>
             {closing ? <CircularProgress size={11} color="inherit" /> : <X size={11} />}
-            Đóng ticket
+            {t("closeTicket")}
           </Box>
         )}
       </Box>
@@ -258,9 +264,9 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
       {err && <Alert severity="error" sx={{ mx: 3, mt: 2, py: 0.5 }} onClose={() => setErr("")}>{err}</Alert>}
 
       {/* Messages */}
-      <Box sx={{ height: "calc(100vh - 320px)", minHeight: 300, overflowY: "auto", p: 2.5, display: "flex", flexDirection: "column", gap: 2, bgcolor: alpha("#F8FAFC", 0.5) }}>
+      <Box sx={{ height: "calc(100vh - 320px)", minHeight: 300, overflowY: "auto", p: 2.5, display: "flex", flexDirection: "column", gap: 2, bgcolor: "surface.muted" }}>
         {(ticket.messages ?? []).length === 0 ? (
-          <Typography sx={{ fontSize: "13px", color: "text.disabled", textAlign: "center", py: 6 }}>Chưa có tin nhắn.</Typography>
+          <Typography sx={{ fontSize: "13px", color: "text.disabled", textAlign: "center", py: 6 }}>{t("noMessages")}</Typography>
         ) : (
           (ticket.messages ?? []).map((msg) => <ChatBubble key={msg.id} msg={msg} userId={userId} />)
         )}
@@ -274,15 +280,15 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
             <Box sx={{ flex: 1, borderRadius: "8px", border: "1.5px solid", borderColor: "divider", bgcolor: "background.paper", "&:focus-within": { borderColor: "#2563EB", boxShadow: `0 0 0 3px ${alpha("#2563EB", 0.08)}` } }}>
               <InputBase multiline minRows={2} maxRows={6} value={reply} onChange={(e) => setReply(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void handleReply(); }}
-                placeholder="Nhập phản hồi... (Ctrl+Enter để gửi)" fullWidth sx={{ p: 1.25, fontSize: "13px", lineHeight: 1.6 }} />
+                placeholder={t("replyPlaceholder")} fullWidth sx={{ p: 1.25, fontSize: "13px", lineHeight: 1.6 }} />
             </Box>
             <Box component="button" onClick={() => void handleReply()} disabled={sending || !reply.trim()}
-              sx={{ flexShrink: 0, width: 32, height: 32, borderRadius: "8px", border: "none", bgcolor: reply.trim() ? "#2563EB" : alpha("#0F172A", 0.07), color: reply.trim() ? "white" : "text.disabled", display: "flex", alignItems: "center", justifyContent: "center", cursor: reply.trim() ? "pointer" : "default", transition: "all 150ms" }}>
+              sx={{ flexShrink: 0, width: 32, height: 32, borderRadius: "8px", border: "none", bgcolor: reply.trim() ? "#2563EB" : "surface.subtle", color: reply.trim() ? "white" : "text.disabled", display: "flex", alignItems: "center", justifyContent: "center", cursor: reply.trim() ? "pointer" : "default", transition: "all 150ms" }}>
               {sending ? <CircularProgress size={14} color="inherit" /> : <Send size={14} />}
             </Box>
           </Box>
         ) : (
-          <Typography sx={{ fontSize: "12px", color: "text.disabled", textAlign: "center", py: 1 }}>Ticket đã đóng — không thể phản hồi thêm.</Typography>
+          <Typography sx={{ fontSize: "12px", color: "text.disabled", textAlign: "center", py: 1 }}>{t("ticketClosedNote")}</Typography>
         )}
       </Box>
     </Box>
@@ -291,6 +297,7 @@ function TicketDetail({ ticketId, userId, onBack }: { ticketId: string; userId: 
 
 // ── Pagination ────────────────────────────────────────────
 function Paginator({ page, total, pageSize, onPage, onPageSize }: { page: number; total: number; pageSize: number; onPage: (p: number) => void; onPageSize: (s: number) => void }) {
+  const t = useTranslations("support");
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const btnSx = (active?: boolean) => ({
     display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "7px",
@@ -303,7 +310,7 @@ function Paginator({ page, total, pageSize, onPage, onPageSize }: { page: number
   return (
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5, flexWrap: "wrap" }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-        <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Số hàng</Typography>
+        <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>{t("rowsPerPage")}</Typography>
         <Select size="small" value={pageSize} onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }}
           sx={{ height: 30, fontSize: "12px", borderRadius: "8px", "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" }, "& .MuiSelect-select": { py: 0, px: 1 } }}>
           {PAGE_SIZES.map((s) => <MenuItem key={s} value={s} sx={{ fontSize: "12px" }}>{s}</MenuItem>)}
@@ -338,6 +345,7 @@ const DEFAULT_COL_VISIBLE: ColVisible = { id: true, subject: true, category: tru
 type View = "list" | "create" | "detail";
 
 export default function SupportPage() {
+  const t = useTranslations("support");
   const { user } = useAuth();
 
   const [view,       setView]       = useState<View>("list");
@@ -361,7 +369,7 @@ export default function SupportPage() {
     setLoading(true); setLoadErr("");
     ticketsApi.list(p, ps)
       .then((res) => { setTickets(res.data); setTotal(res.meta.total); })
-      .catch((e) => setLoadErr(e instanceof ApiError ? e.message : "Không tải được danh sách ticket."))
+      .catch((e) => setLoadErr(e instanceof ApiError ? e.message : t("errLoadList")))
       .finally(() => setLoading(false));
   }
 
@@ -433,13 +441,13 @@ export default function SupportPage() {
             <Headphones size={20} color="white" />
           </Box>
           <Box>
-            <Typography sx={{ fontSize: "18px", fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em" }}>Hỗ trợ khách hàng</Typography>
-            <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Quản lý các yêu cầu hỗ trợ của bạn</Typography>
+            <Typography sx={{ fontSize: "18px", fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em" }}>{t("title")}</Typography>
+            <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{t("subtitle")}</Typography>
           </Box>
         </Box>
         <Box component="button" onClick={() => setView("create")}
           sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", bgcolor: "#2563EB", color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(37,99,235,0.3)", "&:hover": { opacity: 0.9 } }}>
-          <Plus size={14} /> Tạo yêu cầu mới
+          <Plus size={14} /> {t("createNew")}
         </Box>
       </Box>
 
@@ -452,8 +460,8 @@ export default function SupportPage() {
             <Box key={tab.key} component="button" onClick={() => { setActiveTab(tab.key); }}
               sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1.5, py: 0.625, borderRadius: "8px", border: "1.5px solid", borderColor: active ? "#2563EB" : "divider", bgcolor: active ? "#2563EB" : "background.paper", color: active ? "white" : "text.secondary", fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 150ms ease", "&:hover": { borderColor: "#2563EB", color: active ? "white" : "#2563EB" } }}>
               {tab.key !== "all" && STATUS_CFG[tab.key as TicketStatus].icon}
-              {tab.label}
-              <Box sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, px: 0.5, borderRadius: "5px", bgcolor: active ? "rgba(255,255,255,0.25)" : alpha("#0F172A", 0.07), fontSize: "10px", fontWeight: 700 }}>
+              {t(`tabs.${tab.key}`)}
+              <Box sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, px: 0.5, borderRadius: "5px", bgcolor: active ? "rgba(255,255,255,0.25)" : "surface.subtle", fontSize: "10px", fontWeight: 700 }}>
                 {count}
               </Box>
             </Box>
@@ -467,7 +475,7 @@ export default function SupportPage() {
       <Box sx={{ bgcolor: "background.paper", borderRadius: "12px", border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         {/* Table header bar */}
         <Box sx={{ px: 2.5, py: 1.75, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>Danh sách yêu cầu hỗ trợ</Typography>
+          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>{t("listTitle")}</Typography>
           <Box component="button" onClick={(e) => setSettingsAnchor(e.currentTarget)}
             sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "8px", border: "1px solid", borderColor: settingsAnchor ? "#2563EB" : "divider", bgcolor: settingsAnchor ? alpha("#2563EB", 0.06) : "transparent", color: settingsAnchor ? "#2563EB" : "text.secondary", cursor: "pointer", "&:hover": { color: "#2563EB", borderColor: "#2563EB" } }}>
             <Settings size={14} />
@@ -491,13 +499,13 @@ export default function SupportPage() {
           <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             {/* Col headers */}
             <Box component="thead">
-              <Box component="tr" sx={{ bgcolor: alpha("#F8FAFC", 0.8) }}>
+              <Box component="tr" sx={{ bgcolor: "surface.muted" }}>
                 <Box component="th" sx={{ width: 40, px: 2, py: 1.5, borderBottom: "1px solid", borderColor: "divider", textAlign: "center" }}>
                   <Checkbox size="small" sx={{ p: 0 }} checked={allChecked} indeterminate={someChecked} onChange={toggleAll} />
                 </Box>
                 {COLUMNS.map((col) => colVisible[col.key] && (
                   <Box key={col.key} component="th" sx={{ px: 2, py: 1.5, borderBottom: "1px solid", borderColor: "divider", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "text.secondary", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {col.key === "id" ? "Mã yêu cầu" : col.key === "subject" ? "Tiêu đề" : col.key === "category" ? "Danh mục" : col.key === "priority" ? "Độ ưu tiên" : col.key === "status" ? "Trạng thái" : col.key === "createdAt" ? "Ngày tạo" : "Cập nhật"}
+                    {t(`colHeader.${col.key}`)}
                   </Box>
                 ))}
               </Box>
@@ -508,7 +516,7 @@ export default function SupportPage() {
                   <Box component="td" sx={{ px: 2, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
                     <Box sx={{ height: 30, px: 1, borderRadius: "6px", border: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5, "&:focus-within": { borderColor: "#2563EB" } }}>
                       <Search size={12} color="#94A3B8" />
-                      <InputBase value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="Tìm kiếm..." sx={{ fontSize: "12px", flex: 1, "& input": { p: 0 } }} />
+                      <InputBase value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder={t("searchPlaceholder")} sx={{ fontSize: "12px", flex: 1, "& input": { p: 0 } }} />
                     </Box>
                   </Box>
                 )}
@@ -516,7 +524,7 @@ export default function SupportPage() {
                   <Box component="td" sx={{ px: 2, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
                     <Box sx={{ height: 30, px: 1, borderRadius: "6px", border: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5, "&:focus-within": { borderColor: "#2563EB" } }}>
                       <Search size={12} color="#94A3B8" />
-                      <InputBase value={searchSubj} onChange={(e) => setSearchSubj(e.target.value)} placeholder="Tìm kiếm..." sx={{ fontSize: "12px", flex: 1, "& input": { p: 0 } }} />
+                      <InputBase value={searchSubj} onChange={(e) => setSearchSubj(e.target.value)} placeholder={t("searchPlaceholder")} sx={{ fontSize: "12px", flex: 1, "& input": { p: 0 } }} />
                     </Box>
                   </Box>
                 )}
@@ -539,7 +547,7 @@ export default function SupportPage() {
                   <Box component="td" colSpan={8} sx={{ py: 8, textAlign: "center" }}>
                     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
                       <MessageSquare size={28} color="#94A3B8" />
-                      <Typography sx={{ fontSize: "13px", color: "text.disabled" }}>Không có yêu cầu hỗ trợ nào.</Typography>
+                      <Typography sx={{ fontSize: "13px", color: "text.disabled" }}>{t("emptyList")}</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -590,7 +598,7 @@ export default function SupportPage() {
         </Box>
 
         {/* Pagination footer */}
-        <Box sx={{ px: 2.5, py: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: alpha("#F8FAFC", 0.6) }}>
+        <Box sx={{ px: 2.5, py: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "surface.muted" }}>
           <Paginator page={page} total={total} pageSize={pageSize} onPage={handlePage} onPageSize={handlePageSize} />
         </Box>
       </Box>

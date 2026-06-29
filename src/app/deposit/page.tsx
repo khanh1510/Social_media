@@ -3,6 +3,7 @@
 import { Box, Typography, alpha, Alert, CircularProgress, InputBase } from "@mui/material";
 import { Wallet, PlusCircle, History, CircleDollarSign, CreditCard, MessageSquare, Check, Mail, Info, Inbox, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import { paymentsApi, ApiError } from "@/lib/api";
 import type { PaymentIntent } from "@/lib/api/types";
@@ -70,6 +71,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DepositPage() {
+  const t = useTranslations("deposit");
   const { user, wallet } = useAuth();
   const [activeTab, setActiveTab] = useState<"methods" | "history">("methods");
   const [selectedGateway, setSelectedGateway] = useState<string>("admin");
@@ -115,7 +117,7 @@ export default function DepositPage() {
     setIntentError("");
     setCreatedIntent(null);
     if (!amount || amount < 10000) {
-      setIntentError("Số tiền nạp tối thiểu 10.000 ₫.");
+      setIntentError(t("minAmountError"));
       return;
     }
     setCreating(true);
@@ -135,7 +137,7 @@ export default function DepositPage() {
         setHistory(res.data);
       } catch { /* bỏ qua */ }
     } catch (err) {
-      setIntentError(err instanceof ApiError ? err.message : "Không tạo được yêu cầu nạp tiền.");
+      setIntentError(err instanceof ApiError ? err.message : t("createError"));
     } finally {
       setCreating(false);
     }
@@ -153,7 +155,7 @@ export default function DepositPage() {
           borderRadius: "18px",
           border: "1px solid",
           borderColor: alpha("#0EA5E9", 0.25),
-          background: "#F0F9FF",
+          background: (t) => t.palette.surface.hero,
           px: { xs: 2.5, sm: 3 },
           py: { xs: 2.5, sm: 3 },
           mb: 3,
@@ -186,10 +188,10 @@ export default function DepositPage() {
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: { xs: "18px", sm: "22px" }, fontWeight: 800, color: "text.primary", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                Nạp tiền
+                {t("title")}
               </Typography>
               <Typography sx={{ fontSize: "12px", color: "text.secondary", mt: 0.25 }}>
-                Xin chào <Box component="span" sx={{ fontWeight: 700, color: "primary.main" }}>{user?.username ?? ""}</Box>, chọn phương thức và nạp ngay
+                {t("heroSubtitle", { username: user?.username ?? "" })}
               </Typography>
             </Box>
           </Box>
@@ -203,7 +205,7 @@ export default function DepositPage() {
               px: 2,
               py: 1.25,
               borderRadius: "12px",
-              bgcolor: alpha("#FFFFFF", 0.7),
+              bgcolor: "background.paper",
               border: "1px solid",
               borderColor: alpha("#0EA5E9", 0.15),
               backdropFilter: "blur(8px)",
@@ -212,7 +214,7 @@ export default function DepositPage() {
             <CircleDollarSign size={20} color="#0EA5E9" style={{ flexShrink: 0 }} />
             <Box>
               <Typography sx={{ fontSize: "9px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.disabled" }}>
-                Số dư hiện tại
+                {t("balanceLabel")}
               </Typography>
               <Typography sx={{ fontSize: { xs: "15px", sm: "17px" }, fontWeight: 800, color: "#0284C7", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
                 {wallet ? formatVND(wallet.balance) : "—"}
@@ -237,8 +239,8 @@ export default function DepositPage() {
         }}
       >
         {[
-          { key: "methods", label: "Nạp Tiền", icon: <PlusCircle size={15} /> },
-          { key: "history", label: "Lịch Sử", icon: <History size={15} /> },
+          { key: "methods", label: t("tabMethods"), icon: <PlusCircle size={15} /> },
+          { key: "history", label: t("tabHistory"), icon: <History size={15} /> },
         ].map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -305,7 +307,7 @@ export default function DepositPage() {
                 <CreditCard size={15} color="white" />
               </Box>
               <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>
-                Cổng Thanh Toán
+                {t("gatewayTitle")}
               </Typography>
             </Box>
 
@@ -360,7 +362,7 @@ export default function DepositPage() {
                         borderRadius: "10px",
                         border: "1px solid",
                         borderColor: isSelected ? alpha(gw.color, 0.3) : "divider",
-                        bgcolor: isSelected ? alpha(gw.color, 0.08) : alpha("#0F172A", 0.02),
+                        bgcolor: isSelected ? alpha(gw.color, 0.08) : "surface.subtle",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -384,10 +386,10 @@ export default function DepositPage() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {gw.name}
+                        {gw.isAdmin ? t("adminGatewayName") : gw.name}
                       </Typography>
                       <Typography sx={{ fontSize: "10px", color: "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {gw.subtitle}
+                        {gw.isAdmin ? t("adminGatewaySubtitle") : t(`gatewaySubtitle.${gw.id}`)}
                       </Typography>
                     </Box>
 
@@ -450,10 +452,10 @@ export default function DepositPage() {
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontSize: "14px", fontWeight: 700, color: gateway.color, mb: 0.5 }}>
-                      Liên hệ Admin để nạp tiền
+                      {t("adminTitle")}
                     </Typography>
                     <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 2 }}>
-                      Liên hệ qua các kênh bên dưới để được hỗ trợ nạp tiền nhanh chóng.
+                      {t("adminDesc")}
                     </Typography>
 
                     {/* Contact channels */}
@@ -517,7 +519,7 @@ export default function DepositPage() {
                     >
                       <Info size={14} color={gateway.color} style={{ flexShrink: 0, marginTop: 1 }} />
                       <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.5 }}>
-                        Admin sẽ gửi thông tin tài khoản ngân hàng và xác nhận giao dịch sau khi bạn chuyển khoản. Thời gian xử lý: <Box component="strong" sx={{ color: "text.primary" }}>5–15 phút</Box>.
+                        {t("adminNotePre")}<Box component="strong" sx={{ color: "text.primary" }}>{t("adminNoteBold")}</Box>{t("adminNotePost")}
                       </Typography>
                     </Box>
                   </Box>
@@ -535,12 +537,12 @@ export default function DepositPage() {
                 }}
               >
                 <Typography sx={{ fontSize: "14px", fontWeight: 700, color: gateway.color, mb: 2 }}>
-                  Nạp tiền qua {gateway.name}
+                  {t("gatewayPanelTitle", { name: gateway.name })}
                 </Typography>
 
                 {/* Amount input */}
                 <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.secondary", mb: 0.75 }}>
-                  Số tiền cần nạp (VND)
+                  {t("amountLabel")}
                 </Typography>
                 <Box
                   sx={{
@@ -599,15 +601,15 @@ export default function DepositPage() {
                 {createdIntent && (
                   <Box sx={{ mt: 2, borderRadius: "12px", border: "1px solid", borderColor: alpha("#059669", 0.2), bgcolor: alpha("#059669", 0.04), p: 2 }}>
                     <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "#059669", mb: 0.75 }}>
-                      Đã tạo yêu cầu nạp {formatVND(createdIntent.amount)} qua {gateway.name}
+                      {t("intentCreated", { amount: formatVND(createdIntent.amount), name: gateway.name })}
                     </Typography>
 
                     {/* QR code nếu gateway trả về (VNPay QR, MoMo QR…) */}
                     {createdIntent.qrCode && typeof createdIntent.qrCode === "string" && (
                       <Box sx={{ mb: 1.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>Quét mã QR để thanh toán:</Typography>
+                        <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>{t("scanQr")}</Typography>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={createdIntent.qrCode} alt="QR thanh toán" style={{ width: 180, height: 180, borderRadius: 8, border: "1px solid #E2E8F0" }} />
+                        <img src={createdIntent.qrCode} alt={t("qrAlt")} style={{ width: 180, height: 180, borderRadius: 8, border: "1px solid #E2E8F0" }} />
                       </Box>
                     )}
 
@@ -620,20 +622,20 @@ export default function DepositPage() {
                         rel="noopener noreferrer"
                         sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "12px", fontWeight: 700, color: "#059669", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
                       >
-                        Mở trang thanh toán <ExternalLink size={12} />
+                        {t("openPayment")} <ExternalLink size={12} />
                       </Box>
                     )}
 
                     {!createdIntent.redirectUrl && !createdIntent.qrCode && (
                       <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>
-                        Theo dõi trạng thái ở tab Lịch Sử.
+                        {t("trackInHistory")}
                       </Typography>
                     )}
 
                     {/* Thời gian hết hạn */}
                     {createdIntent.expiresAt && (
                       <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 0.75 }}>
-                        Hết hạn lúc: {new Date(createdIntent.expiresAt).toLocaleString("vi-VN")}
+                        {t("expiresAt", { time: new Date(createdIntent.expiresAt).toLocaleString("vi-VN") })}
                       </Typography>
                     )}
                   </Box>
@@ -654,7 +656,7 @@ export default function DepositPage() {
                 >
                   <Info size={14} color={gateway.color} style={{ flexShrink: 0, marginTop: 1 }} />
                   <Typography sx={{ fontSize: "11px", color: "text.secondary", lineHeight: 1.5 }}>
-                    Sau khi thanh toán thành công, số dư sẽ được cộng tự động qua webhook. Yêu cầu nạp hết hạn sau <Box component="strong" sx={{ color: "text.primary" }}>60 phút</Box>.
+                    {t("gatewayNotePre")}<Box component="strong" sx={{ color: "text.primary" }}>{t("gatewayNoteBold")}</Box>{t("gatewayNotePost")}
                   </Typography>
                 </Box>
               </Box>
@@ -690,10 +692,10 @@ export default function DepositPage() {
                     "&:active": { transform: "scale(0.99)" },
                   }}
                 >
-                  {creating ? "Đang tạo yêu cầu..." : `Xác nhận nạp ${formatVND(amount || 0)} qua ${gateway.name}`}
+                  {creating ? t("creating") : t("confirmDeposit", { amount: formatVND(amount || 0), name: gateway.name })}
                 </Box>
                 <Typography sx={{ fontSize: "11px", color: "text.disabled", mt: 1 }}>
-                  Hệ thống sẽ tạo yêu cầu thanh toán và chuyển bạn tới cổng thanh toán
+                  {t("ctaHint")}
                 </Typography>
               </Box>
             )}
@@ -715,7 +717,7 @@ export default function DepositPage() {
           {/* Header */}
           <Box sx={{ px: { xs: 2, sm: 3 }, py: 2, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.primary" }}>
-              Lịch sử nạp tiền
+              {t("historyTitle")}
             </Typography>
           </Box>
 
@@ -726,7 +728,7 @@ export default function DepositPage() {
           ) : history.length === 0 ? (
             <Box sx={{ py: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
               <Inbox size={36} color="#94A3B8" />
-              <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>Chưa có giao dịch nào.</Typography>
+              <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>{t("historyEmpty")}</Typography>
             </Box>
           ) : (
             <Box>
@@ -771,9 +773,9 @@ export default function DepositPage() {
                         {tx.externalId ? tx.externalId.slice(0, 12) : tx.id.slice(0, 8).toUpperCase()}
                         {" · "}
                         {tx.paidAt
-                          ? `Đã thanh toán ${new Date(tx.paidAt).toLocaleString("vi-VN")}`
+                          ? t("paidAt", { time: new Date(tx.paidAt).toLocaleString("vi-VN") })
                           : tx.status === "PENDING" && tx.expiresAt
-                          ? `Hết hạn ${new Date(tx.expiresAt).toLocaleString("vi-VN")}`
+                          ? t("expiresLabel", { time: new Date(tx.expiresAt).toLocaleString("vi-VN") })
                           : new Date(tx.createdAt).toLocaleString("vi-VN")}
                       </Typography>
                     </Box>
@@ -797,7 +799,7 @@ export default function DepositPage() {
                           mt: 0.25,
                         }}
                       >
-                        {st.label}
+                        {t(`statusLabel.${tx.status}`)}
                       </Box>
                     </Box>
                   </Box>

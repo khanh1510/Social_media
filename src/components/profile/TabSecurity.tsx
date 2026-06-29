@@ -3,6 +3,7 @@
 import { Alert, Box, CircularProgress, Typography, alpha, InputBase } from "@mui/material";
 import { Lock, Eye, EyeOff, ShieldCheck, ShieldOff } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { authApi, ApiError } from "@/lib/api";
 
 function PasswordField({ label, placeholder, value, onChange }: { label: string; placeholder: string; value: string; onChange: (v: string) => void }) {
@@ -24,6 +25,7 @@ function PasswordField({ label, placeholder, value, onChange }: { label: string;
 type TwoFAStep = "idle" | "setup" | "enable" | "disable";
 
 function TwoFASection() {
+  const t = useTranslations("profile");
   const [step, setStep] = useState<TwoFAStep>("idle");
   const [qrCode, setQrCode] = useState("");
   const [secret, setSecret] = useState("");
@@ -41,7 +43,7 @@ function TwoFASection() {
       setSecret(res.secret);
       setStep("setup");
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Không thể khởi tạo 2FA.");
+      setErr(e instanceof ApiError ? e.message : t("twoFAInitFailed"));
     } finally { setLoading(false); }
   }
 
@@ -49,12 +51,12 @@ function TwoFASection() {
     setErr(""); setLoading(true);
     try {
       await authApi.enable2FA(totpCode);
-      setMsg("Bật 2FA thành công! Tài khoản đã được bảo vệ thêm.");
+      setMsg(t("twoFAEnabled"));
       setEnabled(true);
       setStep("idle");
       setTotpCode("");
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Mã OTP không đúng.");
+      setErr(e instanceof ApiError ? e.message : t("otpInvalid"));
     } finally { setLoading(false); }
   }
 
@@ -62,12 +64,12 @@ function TwoFASection() {
     setErr(""); setLoading(true);
     try {
       await authApi.disable2FA(totpCode);
-      setMsg("Đã tắt 2FA.");
+      setMsg(t("twoFADisabled"));
       setEnabled(false);
       setStep("idle");
       setTotpCode("");
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Mã OTP không đúng.");
+      setErr(e instanceof ApiError ? e.message : t("otpInvalid"));
     } finally { setLoading(false); }
   }
 
@@ -76,11 +78,11 @@ function TwoFASection() {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
         <ShieldCheck size={16} color="#059669" />
         <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>
-          Xác thực 2 bước (2FA)
+          {t("twoFATitle")}
         </Typography>
       </Box>
       <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 2 }}>
-        Thêm lớp bảo vệ bằng ứng dụng xác thực (Google Authenticator, Authy…).
+        {t("twoFASubtitle")}
       </Typography>
 
       {msg && <Alert severity="success" sx={{ mb: 1.5 }} onClose={() => setMsg("")}>{msg}</Alert>}
@@ -90,7 +92,7 @@ function TwoFASection() {
       {enabled !== null && (
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1.25, py: 0.375, borderRadius: "99px", mb: 1.5, bgcolor: enabled ? alpha("#059669", 0.08) : alpha("#DC2626", 0.08), color: enabled ? "#059669" : "#DC2626", border: `1px solid ${enabled ? alpha("#059669", 0.2) : alpha("#DC2626", 0.2)}` }}>
           {enabled ? <ShieldCheck size={13} /> : <ShieldOff size={13} />}
-          <Typography sx={{ fontSize: "11px", fontWeight: 700 }}>{enabled ? "Đang bật" : "Đã tắt"}</Typography>
+          <Typography sx={{ fontSize: "11px", fontWeight: 700 }}>{enabled ? t("statusOn") : t("statusOff")}</Typography>
         </Box>
       )}
 
@@ -98,11 +100,11 @@ function TwoFASection() {
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Box component="button" onClick={() => void handleSetup()} disabled={loading} sx={{ display: "inline-flex", alignItems: "center", gap: 0.625, px: 2, py: 1, borderRadius: "8px", border: "1px solid", borderColor: alpha("#059669", 0.3), bgcolor: alpha("#059669", 0.06), color: "#059669", fontSize: "12px", fontWeight: 700, cursor: "pointer", transition: "all 150ms ease", "&:hover": { bgcolor: alpha("#059669", 0.1) } }}>
             {loading ? <CircularProgress size={13} color="inherit" /> : <ShieldCheck size={14} />}
-            Bật 2FA
+            {t("enable2FA")}
           </Box>
           <Box component="button" onClick={() => setStep("disable")} sx={{ display: "inline-flex", alignItems: "center", gap: 0.625, px: 2, py: 1, borderRadius: "8px", border: "1px solid", borderColor: alpha("#DC2626", 0.2), bgcolor: "transparent", color: "#DC2626", fontSize: "12px", fontWeight: 700, cursor: "pointer", "&:hover": { bgcolor: alpha("#DC2626", 0.05) } }}>
             <ShieldOff size={14} />
-            Tắt 2FA
+            {t("disable2FA")}
           </Box>
         </Box>
       )}
@@ -110,26 +112,26 @@ function TwoFASection() {
       {step === "setup" && (
         <Box sx={{ borderRadius: "14px", border: "1px solid", borderColor: alpha("#059669", 0.2), bgcolor: alpha("#059669", 0.02), p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
           <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.primary" }}>
-            1. Quét mã QR bằng ứng dụng xác thực:
+            {t("scanQRStep")}
           </Typography>
           {qrCode && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={qrCode} alt="QR 2FA" style={{ width: 160, height: 160, borderRadius: 8, border: "1px solid #E2E8F0" }} />
           )}
           <Typography sx={{ fontSize: "11px", color: "text.secondary" }}>
-            Hoặc nhập thủ công: <Box component="code" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: alpha("#0F172A", 0.05), px: 0.75, py: 0.25, borderRadius: "4px" }}>{secret}</Box>
+            {t("manualEntry")} <Box component="code" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: "surface.subtle", px: 0.75, py: 0.25, borderRadius: "4px" }}>{secret}</Box>
           </Typography>
           <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "text.primary" }}>
-            2. Nhập mã OTP để xác nhận:
+            {t("enterOtpStep")}
           </Typography>
           <Box sx={{ display: "flex", gap: 1 }}>
             <Box sx={{ flex: 1, display: "flex", alignItems: "center", px: 1.5, height: 38, borderRadius: "10px", border: "1.5px solid", borderColor: "divider", bgcolor: "background.paper" }}>
               <InputBase value={totpCode} onChange={(e) => setTotpCode(e.target.value)} placeholder="000000" inputProps={{ maxLength: 6 }} sx={{ fontSize: "16px", fontWeight: 700, letterSpacing: "0.15em", "& input": { p: 0, textAlign: "center" } }} />
             </Box>
             <Box component="button" onClick={() => void handleEnable()} disabled={loading || totpCode.length < 6} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", background: "#059669", color: "white", fontSize: "12px", fontWeight: 700, cursor: "pointer", opacity: loading || totpCode.length < 6 ? 0.6 : 1 }}>
-              {loading ? <CircularProgress size={13} color="inherit" /> : "Xác nhận"}
+              {loading ? <CircularProgress size={13} color="inherit" /> : t("confirm")}
             </Box>
-            <Box component="button" onClick={() => { setStep("idle"); setTotpCode(""); }} sx={{ px: 2.5, py: 1.25, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "12px", cursor: "pointer" }}>Huỷ</Box>
+            <Box component="button" onClick={() => { setStep("idle"); setTotpCode(""); }} sx={{ px: 2.5, py: 1.25, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "12px", cursor: "pointer" }}>{t("cancel")}</Box>
           </Box>
         </Box>
       )}
@@ -137,16 +139,16 @@ function TwoFASection() {
       {step === "disable" && (
         <Box sx={{ borderRadius: "14px", border: "1px solid", borderColor: alpha("#DC2626", 0.2), bgcolor: alpha("#DC2626", 0.02), p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
           <Typography sx={{ fontSize: "12px", color: "text.secondary" }}>
-            Nhập mã OTP từ ứng dụng xác thực để tắt 2FA:
+            {t("enterOtpToDisable")}
           </Typography>
           <Box sx={{ display: "flex", gap: 1 }}>
             <Box sx={{ flex: 1, display: "flex", alignItems: "center", px: 1.5, height: 38, borderRadius: "10px", border: "1.5px solid", borderColor: "divider", bgcolor: "background.paper" }}>
               <InputBase value={totpCode} onChange={(e) => setTotpCode(e.target.value)} placeholder="000000" inputProps={{ maxLength: 6 }} sx={{ fontSize: "16px", fontWeight: 700, letterSpacing: "0.15em", "& input": { p: 0, textAlign: "center" } }} />
             </Box>
             <Box component="button" onClick={() => void handleDisable()} disabled={loading || totpCode.length < 6} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", background: "#DC2626", color: "white", fontSize: "12px", fontWeight: 700, cursor: "pointer", opacity: loading || totpCode.length < 6 ? 0.6 : 1 }}>
-              {loading ? <CircularProgress size={13} color="inherit" /> : "Tắt 2FA"}
+              {loading ? <CircularProgress size={13} color="inherit" /> : t("disable2FA")}
             </Box>
-            <Box component="button" onClick={() => { setStep("idle"); setTotpCode(""); }} sx={{ px: 2.5, py: 1.25, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "12px", cursor: "pointer" }}>Huỷ</Box>
+            <Box component="button" onClick={() => { setStep("idle"); setTotpCode(""); }} sx={{ px: 2.5, py: 1.25, borderRadius: "8px", border: "1px solid", borderColor: "divider", bgcolor: "transparent", color: "text.secondary", fontSize: "12px", cursor: "pointer" }}>{t("cancel")}</Box>
           </Box>
         </Box>
       )}
@@ -156,6 +158,7 @@ function TwoFASection() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function TabSecurity() {
+  const t = useTranslations("profile");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm]         = useState("");
@@ -165,15 +168,15 @@ export default function TabSecurity() {
 
   async function handleSubmit() {
     setError(""); setSuccess("");
-    if (newPassword.length < 8) { setError("Mật khẩu mới tối thiểu 8 ký tự."); return; }
-    if (newPassword !== confirm) { setError("Mật khẩu xác nhận không khớp."); return; }
+    if (newPassword.length < 8) { setError(t("passwordMinChars")); return; }
+    if (newPassword !== confirm) { setError(t("passwordMismatch")); return; }
     setSubmitting(true);
     try {
       await authApi.changePassword(oldPassword, newPassword);
-      setSuccess("Đổi mật khẩu thành công.");
+      setSuccess(t("passwordChanged"));
       setOldPassword(""); setNewPassword(""); setConfirm("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Đổi mật khẩu thất bại.");
+      setError(err instanceof ApiError ? err.message : t("changePasswordFailed"));
     } finally { setSubmitting(false); }
   }
 
@@ -184,24 +187,24 @@ export default function TabSecurity() {
       <Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
           <Lock size={16} color="#2563EB" />
-          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>Đổi Mật Khẩu</Typography>
+          <Typography sx={{ fontSize: "13px", fontWeight: 700, color: "text.primary" }}>{t("changePasswordTitle")}</Typography>
         </Box>
         <Typography sx={{ fontSize: "12px", color: "text.secondary", mb: 2 }}>
-          Chọn mật khẩu mạnh, ít nhất 8 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt.
+          {t("changePasswordSubtitle")}
         </Typography>
 
         {error   && <Alert severity="error"   sx={{ mb: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2.5 }}>
-          <PasswordField label="Mật khẩu hiện tại"       placeholder="••••••••" value={oldPassword} onChange={setOldPassword} />
-          <PasswordField label="Mật khẩu mới"            placeholder="••••••••" value={newPassword} onChange={setNewPassword} />
-          <PasswordField label="Xác nhận mật khẩu mới"   placeholder="••••••••" value={confirm}     onChange={setConfirm} />
+          <PasswordField label={t("currentPassword")}    placeholder="••••••••" value={oldPassword} onChange={setOldPassword} />
+          <PasswordField label={t("newPassword")}         placeholder="••••••••" value={newPassword} onChange={setNewPassword} />
+          <PasswordField label={t("confirmNewPassword")}  placeholder="••••••••" value={confirm}     onChange={setConfirm} />
         </Box>
 
         <Box component="button" onClick={() => void handleSubmit()} disabled={submitting || !oldPassword || !newPassword} sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 2.5, py: 1.25, borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer", opacity: submitting || !oldPassword || !newPassword ? 0.6 : 1, boxShadow: "0 2px 8px rgba(37,99,235,0.25)", transition: "all 180ms ease", "&:hover": { opacity: 0.9, transform: "translateY(-1px)" }, "&:active": { transform: "scale(0.98)" } }}>
           {submitting && <CircularProgress size={14} color="inherit" />}
-          Cập nhật mật khẩu
+          {t("updatePassword")}
         </Box>
       </Box>
 

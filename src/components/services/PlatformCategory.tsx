@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Collapse, alpha } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { ChevronDown } from "lucide-react";
 import {
   siFacebook, siTiktok, siInstagram, siYoutube, siX, siGoogle, siTelegram,
@@ -20,10 +21,10 @@ function SiIcon({ icon, size = 22, color }: { icon: { path: string }; size?: num
 
 const platformLogos: Record<string, React.ReactNode> = {
   facebook: <SiIcon icon={siFacebook} color={`#${siFacebook.hex}`} />,
-  tiktok: <SiIcon icon={siTiktok} color="#010101" />,
+  tiktok: <SiIcon icon={siTiktok} color="currentColor" />,
   instagram: <SiIcon icon={siInstagram} color="#C13584" />,
   youtube: <SiIcon icon={siYoutube} color={`#${siYoutube.hex}`} />,
-  twitter: <SiIcon icon={siX} color="#000000" />,
+  twitter: <SiIcon icon={siX} color="currentColor" />,
   google: <SiIcon icon={siGoogle} color={`#${siGoogle.hex}`} />,
   telegram: <SiIcon icon={siTelegram} color={`#${siTelegram.hex}`} />,
 };
@@ -35,8 +36,13 @@ interface PlatformCategoryProps {
 
 export default function PlatformCategory({ category, defaultOpen = false }: PlatformCategoryProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const theme = useTheme();
   const colors = platformColors[category.id] ?? FALLBACK_PLATFORM_COLOR;
   const total = category.services.length;
+  // Ở dark mode dùng tint từ màu accent thương hiệu thay vì nền pastel sáng cố định
+  const isDark = theme.palette.mode === "dark";
+  const headerBg = isDark ? alpha(colors.text, 0.14) : colors.bg;
+  const glowBg = isDark ? alpha(colors.text, 0.18) : colors.bg;
 
   return (
     <Box
@@ -60,7 +66,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
           width: 80,
           height: 80,
           borderRadius: "50%",
-          bgcolor: colors.bg,
+          bgcolor: glowBg,
           filter: "blur(24px)",
           opacity: 0.6,
           pointerEvents: "none",
@@ -83,7 +89,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
           py: { xs: 1.5, sm: 2 },
           border: "none",
           cursor: "pointer",
-          bgcolor: colors.bg,
+          bgcolor: headerBg,
           transition: "filter 150ms ease",
           "&:hover": { filter: "brightness(0.97)" },
           "&:active": { transform: "scale(0.999)" },
@@ -98,7 +104,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
                 position: "absolute",
                 inset: -3,
                 borderRadius: "14px",
-                bgcolor: colors.bg,
+                bgcolor: glowBg,
                 filter: "blur(6px)",
                 opacity: 0.7,
               }}
@@ -109,7 +115,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
                 width: 42,
                 height: 42,
                 borderRadius: "12px",
-                bgcolor: "white",
+                bgcolor: "background.paper",
                 boxShadow: `0 2px 8px ${colors.glow}, 0 0 0 2px ${alpha(colors.text, 0.1)}`,
                 display: "flex",
                 alignItems: "center",
@@ -138,7 +144,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
               px: 1.25,
               py: 0.25,
               borderRadius: "99px",
-              bgcolor: "white",
+              bgcolor: "background.paper",
               border: `1px solid ${colors.border}`,
               color: colors.text,
               fontSize: "11px",
@@ -154,7 +160,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
               width: 28,
               height: 28,
               borderRadius: "8px",
-              bgcolor: alpha("#FFFFFF", 0.6),
+              bgcolor: "background.paper",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -180,7 +186,7 @@ export default function PlatformCategory({ category, defaultOpen = false }: Plat
             display: "flex",
             flexDirection: "column",
             gap: 0.75,
-            background: alpha(colors.bg, 0.3),
+            background: isDark ? alpha(colors.text, 0.05) : alpha(colors.bg, 0.3),
           }}
         >
           {category.services.map((service) => (

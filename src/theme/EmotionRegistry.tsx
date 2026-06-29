@@ -4,8 +4,21 @@ import createCache from "@emotion/cache";
 import { useServerInsertedHTML } from "next/navigation";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import { useState } from "react";
-import theme from "./theme";
+import { useMemo, useState } from "react";
+import { createAppTheme } from "./theme";
+import { ColorModeProvider, useColorMode } from "@/contexts/ColorModeContext";
+import { LocaleProvider } from "@/contexts/LocaleContext";
+
+function ThemedProviders({ children }: { children: React.ReactNode }) {
+  const { mode } = useColorMode();
+  const theme = useMemo(() => createAppTheme(mode), [mode]);
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LocaleProvider>{children}</LocaleProvider>
+    </ThemeProvider>
+  );
+}
 
 export default function EmotionRegistry({ children }: { children: React.ReactNode }) {
   const [{ cache, flush }] = useState(() => {
@@ -46,10 +59,9 @@ export default function EmotionRegistry({ children }: { children: React.ReactNod
 
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <ColorModeProvider>
+        <ThemedProviders>{children}</ThemedProviders>
+      </ColorModeProvider>
     </CacheProvider>
   );
 }
