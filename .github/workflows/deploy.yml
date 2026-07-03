@@ -1,0 +1,61 @@
+name: Deploy Frontend to Coolify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  # Huỷ các lần chạy cũ trên cùng branch khi có push mới.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1) Kiểm tra chất lượng trước khi cho phép deploy.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build check
+        env:
+          # Dùng đúng API prod để bắt lỗi build sát production.
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+  # 2) Build/lint xong mới gọi Coolify tự deploy (Coolify sẽ tự build image từ Dockerfile).
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deployment
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_WEBHOOK" ]; then
+            echo "::error::Missing secret COOLIFY_WEBHOOK"
+            exit 1
+          fi
+          echo "Triggering Coolify deploy..."
+          http_code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" \
+            -X GET "$COOLIFY_WEBHOOK" \
+            -H "Authorization: Bearer $COOLIFY_TOKEN")
+          echo "HTTP $http_code"
+          cat /tmp/resp.txt
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Coolify deploy trigger failed"
+            exit 1
+          fi
